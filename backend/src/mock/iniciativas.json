@@ -1,0 +1,58 @@
+[
+  {
+    "title": "Automatización conciliaciones",
+    "status": "Aprobada",
+    "fit": 92,
+    "reason": "Alto impacto en tiempos de cierre y datos disponibles en core.",
+    "tags": ["automatizacion", "conciliacion", "backoffice", "eficiencia"]
+  },
+  {
+    "title": "Asistente IA para atención a comercios",
+    "status": "Piloto",
+    "fit": 81,
+    "reason": "Mejora experiencia y reduce carga operativa del contact center.",
+    "tags": ["ia", "chatbot", "atencion", "comercios", "llm"]
+  },
+  {
+    "title": "Detección de anomalías en transacciones",
+    "status": "En evaluación",
+    "fit": 76,
+    "reason": "Alineado a risk & compliance; requiere calidad de datos histórica.",
+    "tags": ["anomalias", "riesgo", "transacciones", "analitica"]
+  },
+  {
+    "title": "OCR para facturas y soportes",
+    "status": "Aprobada",
+    "fit": 88,
+    "reason": "Reduce digitación manual y tiene sponsor claro de operaciones.",
+    "tags": ["ocr", "documentos", "facturas", "automatizacion", "nlp"]
+  },
+  {
+    "title": "Portal self-service de reportes",
+    "status": "Rechazada",
+    "fit": 41,
+    "reason": "Bajo diferenciador y sin métrica de valor clara.",
+    "tags": ["reportes", "portal", "selfservice", "bi"]
+  },
+  {
+    "title": "Clasificación automática de tickets internos",
+    "status": "Piloto",
+    "fit": 79,
+    "reason": "Quick win con LLM y etiquetas históricas disponibles.",
+    "tags": ["tickets", "clasificacion", "llm", "soporte", "automatizacion"]
+  },
+  {
+    "title": "Motor de scoring de fraude en tiempo real",
+    "status": "En evaluación",
+    "fit": 70,
+    "reason": "Alto impacto potencial, pero complejidad y latencia elevadas.",
+    "tags": ["fraude", "scoring", "riesgo", "tiempo", "real"]
+  },
+  {
+    "title": "Automatización de onboarding de comercios",
+    "status": "Aprobada",
+    "fit": 85,
+    "reason": "Reduce tiempo de activación y tiene sponsor comercial.",
+    "tags": ["onboarding", "comercios", "automatizacion", "workflow"]
+  }
+]
