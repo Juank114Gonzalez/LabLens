@@ -97,6 +97,18 @@ pnpm dev
 
 API en [http://localhost:3001](http://localhost:3001)
 
+#### Deploy en Render (Web Service)
+
+| Campo | Valor |
+| --- | --- |
+| Root Directory | `backend` |
+| Build Command | `npm install -g pnpm@9 && pnpm run render:build` |
+| Start Command | `pnpm start` |
+
+No uses `corepack enable` en Render (falla con `EROFS`).
+
+Variables: `GEMINI_API_KEY`, `GEMINI_MODEL`, `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN` (URL de Vercel).
+
 ### 2. Frontend
 
 ```bash
