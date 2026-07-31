@@ -102,10 +102,11 @@ API en [http://localhost:3001](http://localhost:3001)
 | Campo | Valor |
 | --- | --- |
 | Root Directory | `backend` |
-| Build Command | `npm install -g pnpm@9 && pnpm run render:build` |
+| Build Command | `npm install -g pnpm@10 && pnpm install && pnpm run render:build` |
 | Start Command | `pnpm start` |
 
-No uses `corepack enable` en Render (falla con `EROFS`).
+- No uses `corepack enable` (falla con `EROFS`).
+- El prefijo `backend/ $` en la UI de Render **no** se escribe en el comando; solo indica el directorio.
 
 Variables: `GEMINI_API_KEY`, `GEMINI_MODEL`, `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN` (URL de Vercel).
 
