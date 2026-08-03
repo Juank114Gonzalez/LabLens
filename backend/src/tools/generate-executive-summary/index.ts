@@ -5,5 +5,5 @@ import { executeGenerateExecutiveSummary } from './execute.js';
 export const generateExecutiveSummaryTool: ToolDefinition = {
   name: 'generateExecutiveSummary',
   declaration: generateExecutiveSummaryDeclaration,
-  execute: executeGenerateExecutiveSummary,
+  execute: async (args) => executeGenerateExecutiveSummary(args),
 };

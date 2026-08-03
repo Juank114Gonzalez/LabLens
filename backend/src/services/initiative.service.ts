@@ -174,10 +174,4 @@ export async function deleteInitiativeForActor(
   await deleteInitiative(id);
 }
 
-/** Stub for next increment: start evaluation + conversation. */
-export async function startEvaluationStub() {
-  throw new AppError(
-    'El flujo de evaluación se implementará en el siguiente incremento',
-    501,
-  );
-}
+export { startEvaluationForInitiative as startEvaluation } from './evaluation.service.js';

@@ -49,7 +49,11 @@ export function useChatSession(conversationId: string) {
       setDraft('');
     },
     onSuccess: (result: MessageTurnResult) => {
-      stream.start(result.reply);
+      if (result.type === 'evaluation') {
+        stream.start(result.reply);
+      } else {
+        stream.start(result.reply);
+      }
 
       const assistantMessage: ConversationMessage = {
         id: `temp-assistant-${Date.now()}`,

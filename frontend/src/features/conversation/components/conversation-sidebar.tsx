@@ -65,8 +65,8 @@ export function ConversationSidebar() {
       items.push({ href: routes.evaluations, label: 'Evaluaciones', icon: MessageSquare });
     }
 
-    if (canAccessChat(role) && role === 'EVALUATOR') {
-      items.push({ href: routes.chatNew, label: 'Chat LabLens', icon: MessageSquare });
+    if (canAccessChat(role)) {
+      items.push({ href: routes.chatNew, label: 'Nueva evaluación', icon: MessageSquare });
     }
 
     if (canAccessAdmin(role)) {

@@ -1,5 +1,4 @@
-import type { EvaluationResult } from './evaluation';
-import type { InitiativeData } from './initiative';
+import type { EvaluationReadiness, EvaluationResult, ReadinessStatus } from './evaluation';
 
 export type ConversationStatus =
   | 'COLLECTING_INFORMATION'
@@ -17,34 +16,42 @@ export type ConversationMessage = {
 
 export type ConversationView = {
   id: string;
-  userId?: string;
+  evaluationId: string | null;
   initiativeId: string | null;
   title: string | null;
   status: ConversationStatus;
   completion: number;
-  /** Checklist projection; empty until fields are available. */
-  initiativeData: InitiativeData;
+  readinessStatus: ReadinessStatus;
+  readinessLabel: string;
+  readiness: EvaluationReadiness | null;
+  initiative: {
+    id: string;
+    nombre: string;
+    status: string;
+    companyContacts: unknown[];
+    attachments: unknown[];
+  } | null;
   evaluation: EvaluationResult | null;
+  messageCount: number;
+  elapsedMs: number;
   createdAt: string;
   updatedAt: string;
   messages?: ConversationMessage[];
 };
 
 export type CollectingMessageResult = {
-  type: 'collecting';
+  type: 'collecting' | 'ready';
   conversationId: string;
   status: ConversationStatus;
-  completion: number;
+  readinessStatus: ReadinessStatus;
+  readinessLabel: string;
+  readiness: EvaluationReadiness | null;
   reply: string;
-  missingFields: string[];
-  initiativeData: InitiativeData;
+  canGenerate: boolean;
 };
 
 export type EvaluationMessageResult = {
   type: 'evaluation';
-  conversationId: string;
-  status: 'COMPLETED';
-  completion: number;
   reply: string;
   evaluation: EvaluationResult;
 };
@@ -60,6 +67,16 @@ export type ConversationListItem = {
   preview: string;
   initiativeId?: string | null;
   evaluationId?: string | null;
+  readinessStatus?: ReadinessStatus;
   createdAt: string;
   updatedAt: string;
+};
+
+export type StartEvaluationResult = {
+  evaluationId: string;
+  conversationId: string;
+  status: string;
+  readinessStatus: ReadinessStatus;
+  readiness: EvaluationReadiness | null;
+  openingMessage: string;
 };

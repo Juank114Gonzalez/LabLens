@@ -1,16 +1,33 @@
 import type { FunctionDeclaration } from '@google/genai';
-import type { ToolArtifacts, ToolDefinition, ToolName } from '../types/tools.types.js';
+import type {
+  ToolArtifacts,
+  ToolContext,
+  ToolDefinition,
+  ToolName,
+} from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { calculateFitTool } from './calculate-fit/index.js';
-import { findSimilarInitiativesTool } from './find-similar-initiatives/index.js';
-import { generateExecutiveSummaryTool } from './generate-executive-summary/index.js';
+import { findSimilarInitiativesTool, searchSimilarInitiativesTool } from './find-similar-initiatives/index.js';
+import { generateBusinessCaseTool } from './generate-business-case/index.js';
+import { getClassificationsTool, getWorkTablesTool } from './get-catalogs/index.js';
+import { getEvaluationCriteriaTool } from './get-evaluation-criteria/index.js';
+import { getInitiativeTool } from './get-initiative/index.js';
+import { getPreviousEvaluationsTool } from './get-previous-evaluations/index.js';
+import { saveEvaluationTool } from './save-evaluation/index.js';
 import { searchKnowledgeTool } from './search-knowledge/index.js';
+import { updateReadinessTool } from './update-readiness/index.js';
 
 const tools: ToolDefinition[] = [
   searchKnowledgeTool,
+  searchSimilarInitiativesTool,
   findSimilarInitiativesTool,
-  calculateFitTool,
-  generateExecutiveSummaryTool,
+  getInitiativeTool,
+  getEvaluationCriteriaTool,
+  getPreviousEvaluationsTool,
+  getClassificationsTool,
+  getWorkTablesTool,
+  updateReadinessTool,
+  generateBusinessCaseTool,
+  saveEvaluationTool,
 ];
 
 const toolsByName = new Map<ToolName, ToolDefinition>(
@@ -25,6 +42,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   artifacts: ToolArtifacts,
+  context: ToolContext,
 ): Promise<unknown> {
   const tool = toolsByName.get(name as ToolName);
 
@@ -32,7 +50,7 @@ export async function executeTool(
     throw new AppError(`Unknown tool: ${name}`, 500);
   }
 
-  const result = await tool.execute(args ?? {});
+  const result = await tool.execute(args ?? {}, context);
   captureArtifacts(name as ToolName, result, artifacts);
   return result;
 }
@@ -42,18 +60,30 @@ function captureArtifacts(
   result: unknown,
   artifacts: ToolArtifacts,
 ): void {
-  if (name === 'calculateFit' && result && typeof result === 'object') {
-    artifacts.fit = result as ToolArtifacts['fit'];
-    return;
-  }
-
-  if (name === 'findSimilarInitiatives' && result && typeof result === 'object') {
+  if (
+    (name === 'searchSimilarInitiatives' || name === 'findSimilarInitiatives') &&
+    result &&
+    typeof result === 'object'
+  ) {
     const payload = result as { results?: ToolArtifacts['similarInitiatives'] };
     artifacts.similarInitiatives = payload.results ?? [];
     return;
   }
 
-  if (name === 'generateExecutiveSummary' && result && typeof result === 'object') {
-    artifacts.summary = result as ToolArtifacts['summary'];
+  if (name === 'updateReadiness' && result && typeof result === 'object') {
+    const payload = result as { readiness?: ToolArtifacts['readiness'] };
+    artifacts.readiness = payload.readiness ?? null;
+    return;
+  }
+
+  if (name === 'generateBusinessCase' && result && typeof result === 'object') {
+    artifacts.businessCase = result as ToolArtifacts['businessCase'];
+    return;
+  }
+
+  if (name === 'saveEvaluation' && result && typeof result === 'object') {
+    artifacts.evaluationSaved = Boolean(
+      (result as { saved?: boolean }).saved,
+    );
   }
 }

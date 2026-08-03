@@ -126,12 +126,21 @@ model Attachment {
   @@index([publicId])
 }
 
-/// Structure prepared for future evaluation flow. No agent logic in this increment.
+enum ReadinessStatus {
+  INSUFFICIENT
+  IN_PROGRESS
+  READY
+}
+
 model Evaluation {
   id                     String                     @id @default(uuid()) @db.Uuid
   initiativeId           String                     @db.Uuid
   evaluatorId            String?                    @db.Uuid
   status                 EvaluationStatus           @default(PENDING)
+  readinessStatus        ReadinessStatus            @default(INSUFFICIENT)
+  readiness              Json?
+  priority               String?
+  configVersion          String?
   criteriaSnapshot       Json?
   weightsSnapshot        Json?
   results                Json?

@@ -5,7 +5,7 @@ import {
   getInitiativeForActor,
   listInitiativesForActor,
   registerInitiativeForActor,
-  startEvaluationStub,
+  startEvaluation,
   updateInitiativeForActor,
 } from '../services/initiative.service.js';
 import { AppError } from '../utils/AppError.js';
@@ -70,6 +70,8 @@ export async function listInitiativeEvaluationsController(req: Request, res: Res
   sendSuccess(res, initiative.evaluations);
 }
 
-export async function startEvaluationController(_req: Request, _res: Response) {
-  await startEvaluationStub();
+export async function startEvaluationController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  sendSuccess(res, await startEvaluation(id, user), 201);
 }

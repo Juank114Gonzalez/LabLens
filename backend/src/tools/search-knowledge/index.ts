@@ -5,5 +5,5 @@ import { executeSearchKnowledge } from './execute.js';
 export const searchKnowledgeTool: ToolDefinition = {
   name: 'searchKnowledge',
   declaration: searchKnowledgeDeclaration,
-  execute: executeSearchKnowledge,
+  execute: async (args) => executeSearchKnowledge(args),
 };

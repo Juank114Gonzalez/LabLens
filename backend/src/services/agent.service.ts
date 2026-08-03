@@ -5,11 +5,12 @@ import type { ChatMessage } from '../types/chat.types.js';
 import {
   createEmptyArtifacts,
   type ToolArtifacts,
+  type ToolContext,
 } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
 import { generateWithTools, getResponseParts } from './gemini.service.js';
 
-const MAX_TOOL_ROUNDS = 6;
+const MAX_TOOL_ROUNDS = 10;
 
 export type AgentRunResult = {
   message: string;
@@ -33,9 +34,12 @@ function getFunctionCalls(parts: Part[]): FunctionCall[] {
 
 /**
  * Runs a Gemini agent loop with LabLens tools.
- * Business rules live in tools; this service only orchestrates calls.
+ * Business rules live in tools/services; this layer only orchestrates reasoning.
  */
-export async function runLabLensAgent(history: ChatMessage[]): Promise<AgentRunResult> {
+export async function runLabLensAgent(
+  history: ChatMessage[],
+  context: ToolContext,
+): Promise<AgentRunResult> {
   const systemInstruction = await loadPrompt('system.md');
   const declarations = getToolDeclarations();
   const contents: Content[] = toContents(history);
@@ -74,7 +78,12 @@ export async function runLabLensAgent(history: ChatMessage[]): Promise<AgentRunR
     for (const call of functionCalls) {
       const args = (call.args ?? {}) as Record<string, unknown>;
       try {
-        const result = await executeTool(call.name ?? 'unknown', args, artifacts);
+        const result = await executeTool(
+          call.name ?? 'unknown',
+          args,
+          artifacts,
+          context,
+        );
         functionResponseParts.push({
           functionResponse: {
             name: call.name ?? 'unknown',

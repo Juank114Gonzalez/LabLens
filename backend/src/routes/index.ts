@@ -5,6 +5,7 @@ import { classificationRouter } from './classification.routes.js';
 import { companyContactRouter } from './company-contact.routes.js';
 import { conversationRouter } from './conversation.routes.js';
 import { criteriaRouter } from './criteria.routes.js';
+import { evaluationRouter } from './evaluation.routes.js';
 import { initiativeRouter } from './initiative.routes.js';
 import { userAdminRouter } from './user-admin.routes.js';
 import { workTableRouter } from './work-table.routes.js';
@@ -20,6 +21,7 @@ apiRouter.use('/evaluation-criteria', criteriaRouter);
 apiRouter.use('/intelligent-classifications', classificationRouter);
 apiRouter.use('/work-tables', workTableRouter);
 apiRouter.use('/conversations', conversationRouter);
+apiRouter.use('/evaluations', evaluationRouter);
 
 apiRouter.get('/health', (_req, res) => {
   res.status(200).json({

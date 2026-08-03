@@ -2,13 +2,19 @@ import { apiClient } from '@/api/client';
 import type {
   ConversationListItem,
   ConversationView,
+  EvaluationMessageResult,
   MessageTurnResult,
+  StartEvaluationResult,
 } from '@/types/conversation';
 
 type ConversationListApiItem = Omit<ConversationListItem, 'favorite'>;
 
-export async function createConversation(): Promise<ConversationView> {
-  return apiClient.post<ConversationView>('/api/conversations');
+export async function startEvaluation(
+  initiativeId: string,
+): Promise<StartEvaluationResult> {
+  return apiClient.post<StartEvaluationResult>(
+    `/api/initiatives/${initiativeId}/evaluations`,
+  );
 }
 
 export async function getConversation(id: string): Promise<ConversationView> {
@@ -24,6 +30,16 @@ export async function sendMessage(
     `/api/conversations/${conversationId}/messages`,
     { message },
     { signal, retry: 0 },
+  );
+}
+
+export async function generateEvaluation(
+  conversationId: string,
+): Promise<EvaluationMessageResult> {
+  return apiClient.post<EvaluationMessageResult>(
+    `/api/conversations/${conversationId}/generate`,
+    {},
+    { retry: 0 },
   );
 }
 
