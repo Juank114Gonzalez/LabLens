@@ -17,8 +17,12 @@ export type ConversationMessage = {
 
 export type ConversationView = {
   id: string;
+  userId?: string;
+  initiativeId: string | null;
+  title: string | null;
   status: ConversationStatus;
   completion: number;
+  /** Checklist projection; empty until fields are available. */
   initiativeData: InitiativeData;
   evaluation: EvaluationResult | null;
   createdAt: string;
@@ -47,7 +51,6 @@ export type EvaluationMessageResult = {
 
 export type MessageTurnResult = CollectingMessageResult | EvaluationMessageResult;
 
-/** Local sidebar metadata (backend has no list/rename/favorites yet). */
 export type ConversationListItem = {
   id: string;
   title: string;
@@ -55,6 +58,7 @@ export type ConversationListItem = {
   completion: number;
   favorite: boolean;
   preview: string;
+  initiativeId: string | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
+import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { EmptyState } from '@/shared/components/empty-state';
 import { StatusBadge } from '@/shared/components/status-badge';
 import { formatShortDate } from '@/shared/lib/dates';
-import { useConversationMetaStore } from '@/stores/conversation-meta.store';
 import { useAuthStore } from '@/stores/auth.store';
 
 export function DashboardView() {
   const user = useAuthStore((state) => state.user);
-  const items = useConversationMetaStore((state) => state.items);
+  const { data: items = [] } = useConversations();
 
   const recent = [...items]
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
@@ -67,7 +67,7 @@ export function DashboardView() {
             title: 'Mis conversaciones',
             value: String(items.length),
             icon: MessagesSquare,
-            hint: 'Historial local sincronizado con el backend al abrir',
+            hint: 'Historial sincronizado con tu cuenta',
           },
           {
             title: 'Evaluaciones',

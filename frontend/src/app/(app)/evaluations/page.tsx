@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config/routes';
+import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
-import { useConversationMetaStore } from '@/stores/conversation-meta.store';
 
 export default function EvaluationsPage() {
-  const items = useConversationMetaStore((state) => state.items).filter(
-    (item) => item.status === 'COMPLETED',
-  );
+  const { data: items = [] } = useConversations();
+  const completed = items.filter((item) => item.status === 'COMPLETED');
 
   return (
     <div className="h-full overflow-y-auto p-6 sm:p-8">
@@ -22,7 +21,7 @@ export default function EvaluationsPage() {
           </p>
         </div>
 
-        {items.length === 0 ? (
+        {completed.length === 0 ? (
           <EmptyState
             title="Sin evaluaciones todavía"
             description="Completa una entrevista con LabLens para generar la ficha de evaluación."
@@ -34,7 +33,7 @@ export default function EvaluationsPage() {
           />
         ) : (
           <div className="space-y-3">
-            {items.map((item) => (
+            {completed.map((item) => (
               <Link
                 key={item.id}
                 href={routes.evaluation(item.id)}

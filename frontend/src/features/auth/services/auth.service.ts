@@ -1,83 +1,48 @@
 import { apiClient } from '@/api/client';
 import type {
   AuthSession,
+  AuthUser,
   LoginPayload,
   RegisterPayload,
 } from '@/types/auth';
 
-/**
- * Auth service.
- *
- * TODO(backend): POST /api/auth/login
- * TODO(backend): POST /api/auth/register
- * TODO(backend): POST /api/auth/refresh  (refresh token via HttpOnly cookie)
- * TODO(backend): POST /api/auth/logout
- * TODO(backend): GET  /api/auth/me
- *
- * Until those endpoints exist, this service uses a local mock session so the
- * protected UX (login → dashboard → chat) can be developed end-to-end.
- */
-
-const MOCK_PASSWORD_MIN = 6;
-
-function mockSession(name: string, email: string): AuthSession {
-  const now = Date.now();
-  return {
-    user: {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      role: 'innovator',
-      avatarUrl: null,
-    },
-    tokens: {
-      accessToken: `mock-access-${crypto.randomUUID()}`,
-      expiresAt: now + 1000 * 60 * 60,
-    },
-  };
-}
+type RefreshResponse = {
+  accessToken: string;
+  expiresAt: number;
+};
 
 export async function login(payload: LoginPayload): Promise<AuthSession> {
-  // TODO(backend): return apiClient.post<AuthSession>('/api/auth/login', payload, { auth: false });
-  await delay(450);
-
-  if (!payload.email.includes('@') || payload.password.length < MOCK_PASSWORD_MIN) {
-    throw new Error('Credenciales inválidas');
-  }
-
-  const name = payload.email.split('@')[0] ?? 'Innovador';
-  return mockSession(capitalize(name), payload.email.toLowerCase());
+  return apiClient.post<AuthSession>('/api/auth/login', payload, { auth: false });
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthSession> {
-  // TODO(backend): return apiClient.post<AuthSession>('/api/auth/register', payload, { auth: false });
-  await delay(550);
-
-  if (payload.password.length < MOCK_PASSWORD_MIN) {
-    throw new Error('La contraseña debe tener al menos 6 caracteres');
-  }
-
-  return mockSession(payload.name.trim(), payload.email.toLowerCase());
+  return apiClient.post<AuthSession>('/api/auth/register', payload, { auth: false });
 }
 
-export async function refreshSession(): Promise<string | null> {
-  // TODO(backend): call POST /api/auth/refresh with credentials: 'include'
-  // Refresh token should be HttpOnly; frontend only receives a new access token.
-  void apiClient;
-  await delay(120);
-  return `mock-access-${crypto.randomUUID()}`;
+export async function refreshSession(): Promise<RefreshResponse | null> {
+  try {
+    return await apiClient.post<RefreshResponse>(
+      '/api/auth/refresh',
+      undefined,
+      { auth: false, skipRefresh: true, retry: 0 },
+    );
+  } catch {
+    return null;
+  }
 }
 
 export async function logout(): Promise<void> {
-  // TODO(backend): await apiClient.post('/api/auth/logout');
-  await delay(120);
+  try {
+    await apiClient.post('/api/auth/logout', undefined, {
+      auth: false,
+      skipRefresh: true,
+      retry: 0,
+    });
+  } catch {
+    // Clear local session even if the API call fails.
+  }
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function capitalize(value: string) {
-  if (!value) return 'Innovador';
-  return value.charAt(0).toUpperCase() + value.slice(1);
+export async function getMe(): Promise<AuthUser> {
+  return apiClient.get<AuthUser>('/api/auth/me');
 }

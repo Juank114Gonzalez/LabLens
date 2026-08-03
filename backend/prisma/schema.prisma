@@ -19,15 +19,86 @@ enum MessageRole {
   system
 }
 
+enum InitiativeStatus {
+  DRAFT
+  IN_PROGRESS
+  EVALUATED
+  ARCHIVED
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  email         String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+  initiatives   Initiative[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model Initiative {
+  id                  String           @id @default(uuid()) @db.Uuid
+  userId              String           @db.Uuid
+  title               String
+  status              InitiativeStatus @default(DRAFT)
+  currentEvaluationId String?          @unique @db.Uuid
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations       Conversation[]
+  evaluations         Evaluation[]     @relation("InitiativeEvaluations")
+  currentEvaluation   Evaluation?      @relation("CurrentEvaluation", fields: [currentEvaluationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, updatedAt])
+}
+
+model Evaluation {
+  id               String     @id @default(uuid()) @db.Uuid
+  initiativeId     String     @db.Uuid
+  fit              Int
+  impact           Int
+  alignment        Int
+  dataAvailability Int
+  complexity       Int
+  summary          String
+  recommendations  Json
+  createdAt        DateTime   @default(now())
+  initiative       Initiative @relation("InitiativeEvaluations", fields: [initiativeId], references: [id], onDelete: Cascade)
+  currentFor       Initiative? @relation("CurrentEvaluation")
+
+  @@index([initiativeId, createdAt])
+}
+
 model Conversation {
-  id             String             @id @default(uuid()) @db.Uuid
-  status         ConversationStatus @default(COLLECTING_INFORMATION)
-  completion     Int                @default(0)
-  initiativeData Json
-  evaluation     Json?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  messages       Message[]
+  id           String             @id @default(uuid()) @db.Uuid
+  userId       String             @db.Uuid
+  initiativeId String?            @db.Uuid
+  title        String?
+  status       ConversationStatus @default(COLLECTING_INFORMATION)
+  completion   Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  initiative   Initiative?        @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  messages     Message[]
+
+  @@index([userId, updatedAt])
+  @@index([initiativeId])
 }
 
 model Message {

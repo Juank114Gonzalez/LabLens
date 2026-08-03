@@ -2,19 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/errors';
 import { routes } from '@/config/routes';
 import { createConversation } from '@/features/conversation/services/conversation.service';
-import {
-  createListItemFromConversation,
-  useConversationMetaStore,
-} from '@/stores/conversation-meta.store';
+import { conversationsQueryKey } from '@/features/conversation/hooks/use-conversations';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NewChatPage() {
   const router = useRouter();
-  const upsert = useConversationMetaStore((state) => state.upsert);
+  const queryClient = useQueryClient();
   const started = useRef(false);
 
   useEffect(() => {
@@ -24,23 +22,14 @@ export default function NewChatPage() {
     void (async () => {
       try {
         const conversation = await createConversation();
-        upsert(
-          createListItemFromConversation({
-            id: conversation.id,
-            title: conversation.initiativeData.title ?? undefined,
-            status: conversation.status,
-            completion: conversation.completion,
-            createdAt: conversation.createdAt,
-            updatedAt: conversation.updatedAt,
-          }),
-        );
+        await queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
         router.replace(routes.chat(conversation.id));
       } catch (error) {
         toast.error(getErrorMessage(error, 'No se pudo crear la conversación'));
         router.replace(routes.dashboard);
       }
     })();
-  }, [router, upsert]);
+  }, [queryClient, router]);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-8">

@@ -26,13 +26,13 @@ import {
 import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ConversationItem } from '@/features/conversation/components/conversation-item';
+import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { Logo } from '@/shared/components/logo';
 import {
   DATE_GROUP_LABELS,
   groupDateLabel,
   type DateGroup,
 } from '@/shared/lib/dates';
-import { useConversationMetaStore } from '@/stores/conversation-meta.store';
 import { useUiStore } from '@/stores/ui.store';
 
 const GROUP_ORDER: DateGroup[] = ['today', 'yesterday', 'week', 'older'];
@@ -41,10 +41,7 @@ export function ConversationSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const items = useConversationMetaStore((state) => state.items);
-  const rename = useConversationMetaStore((state) => state.rename);
-  const remove = useConversationMetaStore((state) => state.remove);
-  const toggleFavorite = useConversationMetaStore((state) => state.toggleFavorite);
+  const { data: items = [], isLoading } = useConversations();
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
   const [query, setQuery] = useState('');
 
@@ -66,23 +63,12 @@ export function ConversationSidebar() {
     })).filter((entry) => entry.items.length > 0);
   }, [items, query]);
 
-  function handleRename(id: string) {
-    const current = items.find((item) => item.id === id);
-    const next = window.prompt('Nuevo nombre de la iniciativa', current?.title ?? '');
-    if (!next?.trim()) return;
-    rename(id, next.trim());
-    // TODO(backend): PATCH /api/conversations/:id
-    toast.success('Conversación renombrada (local)');
+  function handleRename(_id: string) {
+    toast.message('Renombrar conversaciones estará disponible pronto');
   }
 
   function handleDelete(id: string) {
-    const confirmed = window.confirm(
-      '¿Eliminar esta conversación del historial local? El backend aún no expone DELETE.',
-    );
-    if (!confirmed) return;
-    remove(id);
-    // TODO(backend): DELETE /api/conversations/:id
-    toast.message('Conversación eliminada del historial local');
+    toast.message('Eliminar conversaciones estará disponible pronto');
     if (pathname.includes(id)) {
       router.push(routes.dashboard);
     }
@@ -125,7 +111,9 @@ export function ConversationSidebar() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {grouped.length === 0 ? (
+        {isLoading ? (
+          <p className="px-3 py-6 text-sm text-muted-foreground">Cargando conversaciones…</p>
+        ) : grouped.length === 0 ? (
           <p className="px-3 py-6 text-sm text-muted-foreground">
             Aún no hay conversaciones. Crea la primera iniciativa.
           </p>
@@ -143,10 +131,9 @@ export function ConversationSidebar() {
                     active={pathname.includes(item.id)}
                     onRename={handleRename}
                     onDelete={handleDelete}
-                    onToggleFavorite={(id) => {
-                      toggleFavorite(id);
-                      // TODO(backend): favorite endpoint
-                    }}
+                    onToggleFavorite={() =>
+                      toast.message('Favoritos estará disponible pronto')
+                    }
                   />
                 ))}
               </div>

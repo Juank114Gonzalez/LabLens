@@ -70,7 +70,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
       <header className="flex items-center justify-between border-b border-border/70 px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <p className="truncate font-heading text-base font-medium sm:text-lg">
-            {conversation.initiativeData.title || 'Nueva iniciativa'}
+            {conversation.title || conversation.initiativeData?.title || 'Nueva iniciativa'}
           </p>
           <p className="text-xs text-muted-foreground">
             Comité Virtual · entrevista guiada por LabLens

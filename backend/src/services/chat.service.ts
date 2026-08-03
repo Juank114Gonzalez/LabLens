@@ -1,12 +1,18 @@
-import { ConversationStatus } from '@prisma/client';
+import { ConversationStatus, InitiativeStatus } from '@prisma/client';
 import {
   getConversationOrThrow,
   updateConversation,
 } from '../repositories/conversation.repository.js';
+import {
+  createEvaluation,
+  createInitiative,
+  setCurrentEvaluation,
+  updateInitiative,
+} from '../repositories/user-initiative.repository.js';
 import { createMessage, listMessagesByConversation } from '../repositories/message.repository.js';
 import type { AgentChatData, ChatMessage } from '../types/chat.types.js';
+import { createEmptyInitiativeData } from '../types/initiative-data.types.js';
 import type { EvaluationResult } from '../types/evaluation.types.js';
-import { parseInitiativeData } from '../utils/initiative-data.js';
 import { AppError } from '../utils/AppError.js';
 import { runLabLensAgent } from './agent.service.js';
 
@@ -17,13 +23,12 @@ export type ConversationAgentResult = AgentChatData & {
   /** Frontend compatibility alias */
   reply: string;
   type: 'collecting' | 'evaluation';
-  initiativeData: ReturnType<typeof parseInitiativeData>;
+  initiativeData: ReturnType<typeof createEmptyInitiativeData>;
   evaluation: EvaluationResult | null;
+  missingFields: string[];
 };
 
-function toEvaluation(
-  data: AgentChatData,
-): EvaluationResult | null {
+function toEvaluation(data: AgentChatData): EvaluationResult | null {
   if (!data.fit || !data.summary) {
     return null;
   }
@@ -56,15 +61,74 @@ function toEvaluation(
   };
 }
 
+function deriveTitle(data: AgentChatData, fallback: string | null): string {
+  const fromSummary = data.summary?.problema?.trim();
+  if (fromSummary) {
+    return fromSummary.length > 80 ? `${fromSummary.slice(0, 77)}...` : fromSummary;
+  }
+  return fallback?.trim() || 'Iniciativa evaluada';
+}
+
+async function persistEvaluationEntities(input: {
+  userId: string;
+  conversationId: string;
+  existingInitiativeId: string | null;
+  existingTitle: string | null;
+  data: AgentChatData;
+  evaluation: EvaluationResult;
+}): Promise<{ initiativeId: string; title: string }> {
+  const title = deriveTitle(input.data, input.existingTitle);
+  const fit = input.data.fit!;
+
+  let initiativeId = input.existingInitiativeId;
+
+  if (initiativeId) {
+    await updateInitiative(initiativeId, {
+      title,
+      status: InitiativeStatus.EVALUATED,
+    });
+  } else {
+    const initiative = await createInitiative({
+      userId: input.userId,
+      title,
+      status: InitiativeStatus.EVALUATED,
+    });
+    initiativeId = initiative.id;
+  }
+
+  const created = await createEvaluation({
+    initiativeId,
+    fit: fit.fit,
+    impact: fit.impact,
+    alignment: fit.alignment,
+    dataAvailability: fit.dataAvailability,
+    complexity: fit.complexity,
+    summary: input.evaluation.summary,
+    recommendations: input.evaluation.recommendations,
+  });
+
+  await setCurrentEvaluation(initiativeId, created.id);
+
+  await updateConversation(input.conversationId, {
+    status: ConversationStatus.COMPLETED,
+    completion: 100,
+    title,
+    initiativeId,
+  });
+
+  return { initiativeId, title };
+}
+
 /**
  * Conversation turn orchestrator.
  * No business rules here — only persistence + agent invocation.
  */
 export async function processConversationMessage(
   conversationId: string,
+  userId: string,
   message: string,
 ): Promise<ConversationAgentResult> {
-  const conversation = await getConversationOrThrow(conversationId);
+  const conversation = await getConversationOrThrow(conversationId, userId);
 
   if (conversation.status === ConversationStatus.COMPLETED) {
     throw new AppError('This conversation is already completed', 409);
@@ -92,16 +156,24 @@ export async function processConversationMessage(
 
   const evaluated = Boolean(data.fit && data.summary);
   const evaluation = toEvaluation(data);
-  const completion = evaluated ? 100 : conversation.completion;
-  const status = evaluated
-    ? ConversationStatus.COMPLETED
-    : ConversationStatus.COLLECTING_INFORMATION;
+  const initiativeData = createEmptyInitiativeData();
 
-  await updateConversation(conversationId, {
-    status,
-    completion,
-    evaluation,
-  });
+  if (evaluated && evaluation) {
+    const persisted = await persistEvaluationEntities({
+      userId,
+      conversationId,
+      existingInitiativeId: conversation.initiativeId,
+      existingTitle: conversation.title,
+      data,
+      evaluation,
+    });
+    initiativeData.title = persisted.title;
+  } else {
+    await updateConversation(conversationId, {
+      status: ConversationStatus.COLLECTING_INFORMATION,
+      completion: conversation.completion,
+    });
+  }
 
   await createMessage({
     conversationId,
@@ -112,11 +184,14 @@ export async function processConversationMessage(
   return {
     ...data,
     conversationId,
-    status,
-    completion,
+    status: evaluated
+      ? ConversationStatus.COMPLETED
+      : ConversationStatus.COLLECTING_INFORMATION,
+    completion: evaluated ? 100 : conversation.completion,
     reply: data.message,
     type: evaluated ? 'evaluation' : 'collecting',
-    initiativeData: parseInitiativeData(conversation.initiativeData),
+    initiativeData,
     evaluation,
+    missingFields: [],
   };
 }

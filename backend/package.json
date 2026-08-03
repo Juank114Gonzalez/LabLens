@@ -26,15 +26,21 @@
   "dependencies": {
     "@google/genai": "^1.15.0",
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
     "zod": "^4.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.1.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",

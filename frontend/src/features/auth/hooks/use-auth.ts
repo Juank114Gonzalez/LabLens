@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/errors';
@@ -12,9 +12,11 @@ import {
 } from '@/features/auth/services/auth.service';
 import type { LoginFormValues, RegisterFormValues } from '@/features/auth/types/auth.schema';
 import { useAuthStore } from '@/stores/auth.store';
+import { useConversationMetaStore } from '@/stores/conversation-meta.store';
 
 export function useAuth() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const setSession = useAuthStore((state) => state.setSession);
   const clearSession = useAuthStore((state) => state.clearSession);
   const user = useAuthStore((state) => state.user);
@@ -44,6 +46,8 @@ export function useAuth() {
     mutationFn: () => logout(),
     onSuccess: () => {
       clearSession();
+      useConversationMetaStore.getState().clear();
+      queryClient.clear();
       toast.message('Sesión cerrada');
       router.replace(routes.login);
     },

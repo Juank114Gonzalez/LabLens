@@ -11,13 +11,28 @@ export type ConversationMessage = {
 
 export type ConversationView = {
   id: string;
+  userId: string;
+  initiativeId: string | null;
+  title: string | null;
   status: ConversationStatus;
   completion: number;
+  /** Empty checklist until attributes are derived from linked initiative. */
   initiativeData: InitiativeData;
   evaluation: EvaluationResult | null;
   createdAt: Date;
   updatedAt: Date;
   messages?: ConversationMessage[];
+};
+
+export type ConversationListItem = {
+  id: string;
+  title: string;
+  status: ConversationStatus;
+  completion: number;
+  preview: string;
+  initiativeId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type CollectingMessageResult = {
@@ -26,6 +41,7 @@ export type CollectingMessageResult = {
   status: ConversationStatus;
   completion: number;
   reply: string;
+  message: string;
   missingFields: string[];
   initiativeData: InitiativeData;
 };
@@ -36,6 +52,7 @@ export type EvaluationMessageResult = {
   status: 'COMPLETED';
   completion: number;
   reply: string;
+  message: string;
   evaluation: EvaluationResult;
 };
 

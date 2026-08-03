@@ -8,17 +8,12 @@ import {
   getConversation,
   sendMessage,
 } from '@/features/conversation/services/conversation.service';
+import { conversationsQueryKey } from '@/features/conversation/hooks/use-conversations';
 import { useSimulatedStream } from '@/features/chat/hooks/use-simulated-stream';
-import {
-  createListItemFromConversation,
-  useConversationMetaStore,
-} from '@/stores/conversation-meta.store';
 import type { ConversationMessage, MessageTurnResult } from '@/types/conversation';
 
 export function useChatSession(conversationId: string) {
   const queryClient = useQueryClient();
-  const upsert = useConversationMetaStore((state) => state.upsert);
-  const touch = useConversationMetaStore((state) => state.touch);
   const [draft, setDraft] = useState('');
   const [localMessages, setLocalMessages] = useState<ConversationMessage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -32,21 +27,8 @@ export function useChatSession(conversationId: string) {
 
   useEffect(() => {
     if (!conversationQuery.data) return;
-
-    const data = conversationQuery.data;
-    setLocalMessages(data.messages ?? []);
-    upsert(
-      createListItemFromConversation({
-        id: data.id,
-        title: data.initiativeData.title ?? undefined,
-        status: data.status,
-        completion: data.completion,
-        preview: data.messages?.at(-1)?.content,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-      }),
-    );
-  }, [conversationQuery.data, upsert]);
+    setLocalMessages(conversationQuery.data.messages ?? []);
+  }, [conversationQuery.data]);
 
   const mutation = useMutation({
     mutationFn: async (message: string) => {
@@ -77,17 +59,8 @@ export function useChatSession(conversationId: string) {
       };
       setLocalMessages((prev) => [...prev, assistantMessage]);
 
-      touch(conversationId, {
-        completion: result.completion,
-        status: result.status,
-        preview: result.reply,
-        title:
-          result.type === 'collecting'
-            ? result.initiativeData.title ?? undefined
-            : undefined,
-      });
-
       void queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+      void queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'No se pudo enviar el mensaje'));

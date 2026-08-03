@@ -2,7 +2,8 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: 'innovator' | 'reviewer' | 'admin';
+  /** Optional compatibility field; no RBAC in the backend. */
+  role?: 'innovator' | 'reviewer' | 'admin';
   avatarUrl?: string | null;
 };
 

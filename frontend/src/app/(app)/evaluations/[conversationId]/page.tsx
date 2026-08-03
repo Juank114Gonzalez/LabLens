@@ -42,7 +42,7 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
           <>
             <div>
               <h1 className="font-heading text-3xl font-semibold">
-                {query.data.initiativeData.title || 'Evaluación'}
+                {query.data.title || query.data.initiativeData?.title || 'Evaluación'}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Ficha completa del Comité Virtual

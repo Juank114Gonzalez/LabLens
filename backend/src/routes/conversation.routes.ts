@@ -2,8 +2,10 @@ import { Router } from 'express';
 import {
   createConversationController,
   getConversationController,
+  listConversationsController,
   sendMessageController,
 } from '../controllers/conversation.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
@@ -12,6 +14,10 @@ import {
 } from '../validators/conversation.validator.js';
 
 const conversationRouter = Router();
+
+conversationRouter.use(authenticate);
+
+conversationRouter.get('/', asyncHandler(listConversationsController));
 
 conversationRouter.post('/', asyncHandler(createConversationController));
 

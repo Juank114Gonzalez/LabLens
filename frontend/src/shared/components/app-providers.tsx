@@ -20,11 +20,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     configureApiClient({
       getAccessToken: () => useAuthStore.getState().accessToken,
       refreshAccessToken: async () => {
-        const token = await refreshSession();
-        if (token) {
-          setAccessToken(token, Date.now() + 1000 * 60 * 60);
+        const result = await refreshSession();
+        if (result) {
+          setAccessToken(result.accessToken, result.expiresAt);
+          return result.accessToken;
         }
-        return token;
+        return null;
       },
       onUnauthorized: () => {
         clearSession();

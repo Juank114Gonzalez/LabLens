@@ -10,6 +10,14 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().min(1).default('gemini-3-flash-preview'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:3000'),
+  JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET is required'),
+  JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET is required'),
+  JWT_ACCESS_EXPIRES: z.string().min(1).default('15m'),
+  JWT_REFRESH_EXPIRES: z.string().min(1).default('7d'),
+  COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;
