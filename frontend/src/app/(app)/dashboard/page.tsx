@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full min-h-0 overflow-y-auto">
       <DashboardView />
     </div>
   );

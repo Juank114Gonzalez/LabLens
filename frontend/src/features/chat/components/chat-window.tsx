@@ -37,7 +37,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-full flex-col gap-4 p-6">
+      <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-2/3" />
         <Skeleton className="ml-auto h-20 w-1/2" />
@@ -48,7 +48,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
 
   if (isError || !conversation) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
+      <div className="flex h-full min-h-0 items-center justify-center overflow-y-auto p-6">
         <EmptyState
           icon={RotateCcw}
           title="No se pudo cargar la conversación"

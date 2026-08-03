@@ -30,20 +30,26 @@ export default function InitiativeDetailPage({ params }: Props) {
 
   if (query.isLoading) {
     return (
-      <div className="space-y-3 p-8">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-40 w-full" />
+      <div className="h-full min-h-0 overflow-y-auto p-8">
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-72" />
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
     );
   }
 
   const data = query.data;
   if (!data) {
-    return <EmptyState title="Iniciativa no encontrada" description="No tienes acceso o no existe." />;
+    return (
+      <div className="flex h-full min-h-0 items-center justify-center overflow-y-auto p-8">
+        <EmptyState title="Iniciativa no encontrada" description="No tienes acceso o no existe." />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-6 overflow-y-auto p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

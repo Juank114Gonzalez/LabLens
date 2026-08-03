@@ -18,16 +18,26 @@ export default function EditInitiativePage({ params }: Props) {
 
   if (query.isLoading) {
     return (
-      <div className="space-y-3 p-8">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 w-full" />
+      <div className="h-full min-h-0 overflow-y-auto p-8">
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     );
   }
 
   if (!query.data) {
-    return <EmptyState title="Iniciativa no encontrada" description="Verifica el enlace." />;
+    return (
+      <div className="flex h-full min-h-0 items-center justify-center overflow-y-auto p-8">
+        <EmptyState title="Iniciativa no encontrada" description="Verifica el enlace." />
+      </div>
+    );
   }
 
-  return <InitiativeFormWizard initiative={query.data} />;
+  return (
+    <div className="h-full min-h-0 overflow-hidden">
+      <InitiativeFormWizard initiative={query.data} />
+    </div>
+  );
 }

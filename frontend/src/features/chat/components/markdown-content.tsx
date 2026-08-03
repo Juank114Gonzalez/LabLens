@@ -13,7 +13,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
   return (
     <div
       className={cn(
-        'prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:bg-muted prose-pre:text-foreground prose-code:text-primary',
+        'prose prose-sm dark:prose-invert max-w-none break-words prose-p:my-2 prose-pre:overflow-x-auto prose-pre:bg-muted prose-pre:text-foreground prose-code:text-primary',
         className,
       )}
     >

@@ -40,7 +40,7 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
     byEvaluation.isLoading || (byEvaluation.isError && byConversation.isLoading);
 
   return (
-    <div className="h-full overflow-y-auto p-6 sm:p-8">
+    <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <Button asChild variant="ghost" className="-ml-2">
           <Link href={routes.evaluations}>

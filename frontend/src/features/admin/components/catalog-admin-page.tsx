@@ -71,7 +71,7 @@ export function CatalogAdminPage({
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 sm:p-8">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-6 overflow-y-auto p-6 sm:p-8">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-3xl font-semibold">{title}</h1>

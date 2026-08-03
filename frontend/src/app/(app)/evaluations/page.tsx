@@ -15,7 +15,7 @@ export default function EvaluationsPage() {
   });
 
   return (
-    <div className="h-full overflow-y-auto p-6 sm:p-8">
+    <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

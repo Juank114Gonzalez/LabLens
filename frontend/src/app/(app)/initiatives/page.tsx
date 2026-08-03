@@ -22,6 +22,7 @@ import {
 } from '@/features/initiative/services/initiative.service';
 import { INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
 import { EmptyState } from '@/shared/components/empty-state';
+import { ScrollablePage } from '@/shared/components/scrollable-page';
 import { formatShortDate } from '@/shared/lib/dates';
 
 export default function InitiativesPage() {
@@ -29,7 +30,8 @@ export default function InitiativesPage() {
   const items = query.data ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6 sm:p-8">
+    <ScrollablePage className="p-6 sm:p-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-3xl font-semibold">Mis iniciativas</h1>
@@ -116,6 +118,7 @@ export default function InitiativesPage() {
           </TableBody>
         </Table>
       )}
-    </div>
+      </div>
+    </ScrollablePage>
   );
 }

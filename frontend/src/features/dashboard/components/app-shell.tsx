@@ -44,7 +44,7 @@ export function AppShell({ children, showRightPanel = true }: AppShellProps) {
     <div className="flex h-svh overflow-hidden bg-background">
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-[300px] transition-transform lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 h-full min-h-0 w-[300px] transition-transform lg:static lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -60,7 +60,7 @@ export function AppShell({ children, showRightPanel = true }: AppShellProps) {
         />
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-border/70 px-3 py-2 lg:hidden">
           <Button
             type="button"
@@ -92,7 +92,7 @@ export function AppShell({ children, showRightPanel = true }: AppShellProps) {
         <>
           <div
             className={cn(
-              'fixed inset-y-0 right-0 z-40 w-[340px] transition-transform xl:static xl:translate-x-0',
+              'fixed inset-y-0 right-0 z-40 h-full min-h-0 w-[340px] transition-transform xl:static xl:translate-x-0',
               rightPanelOpen ? 'translate-x-0' : 'translate-x-full',
             )}
           >

@@ -4,7 +4,7 @@ import { routes } from '@/config/routes';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-svh items-center justify-center px-4 py-10">
+    <div className="relative flex max-h-svh min-h-svh items-center justify-center overflow-y-auto px-4 py-10">
       <div className="lab-grid pointer-events-none absolute inset-0 opacity-30" />
       <div className="relative w-full max-w-md space-y-8">
         <div className="space-y-3 text-center">

@@ -45,7 +45,7 @@ export function RightInsightPanel({ conversationId }: RightInsightPanelProps) {
 
   if (conversationId && query.isLoading) {
     return (
-      <aside className="flex h-full flex-col border-l border-border/70 p-4">
+      <aside className="flex h-full min-h-0 w-full flex-col border-l border-border/70 p-4">
         <Skeleton className="h-28 w-full" />
         <Skeleton className="mt-3 h-40 w-full" />
       </aside>

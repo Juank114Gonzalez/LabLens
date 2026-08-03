@@ -77,7 +77,7 @@ export default function NewEvaluationChatPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 sm:p-8">
+    <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <h1 className="font-heading text-3xl font-semibold">Nueva evaluación</h1>
