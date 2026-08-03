@@ -1,12 +1,14 @@
+import type { Role } from '@prisma/client';
+
 export type AuthUser = {
   id: string;
   name: string;
   email: string;
+  role: Role;
 };
 
 export type AuthSessionResponse = {
   user: AuthUser & {
-    role: 'innovator';
     avatarUrl: null;
   };
   tokens: {
@@ -19,6 +21,7 @@ export type AccessTokenPayload = {
   sub: string;
   email: string;
   name: string;
+  role: Role;
   type: 'access';
 };
 

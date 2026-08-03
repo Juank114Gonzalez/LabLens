@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { canAccessAdmin, canAccessChat } from '@/features/auth/lib/roles';
 import { ConversationItem } from '@/features/conversation/components/conversation-item';
 import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { Logo } from '@/shared/components/logo';
@@ -41,6 +42,8 @@ export function ConversationSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const canChat = Boolean(user && canAccessChat(user.role));
+  const showAdmin = Boolean(user && canAccessAdmin(user.role));
   const { data: items = [], isLoading } = useConversations();
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
   const [query, setQuery] = useState('');
@@ -91,31 +94,45 @@ export function ConversationSidebar() {
           </Button>
         </div>
 
-        <Button asChild className="w-full justify-start gap-2">
-          <Link href={routes.chatNew} onClick={() => setSidebarOpen(false)}>
-            <MessageSquarePlus className="size-4" />
-            Nueva conversación
-          </Link>
-        </Button>
+        {canChat ? (
+          <Button asChild className="w-full justify-start gap-2">
+            <Link href={routes.chatNew} onClick={() => setSidebarOpen(false)}>
+              <MessageSquarePlus className="size-4" />
+              Nueva conversación
+            </Link>
+          </Button>
+        ) : (
+          <p className="rounded-xl border border-dashed border-border/70 px-3 py-3 text-xs text-muted-foreground">
+            Como generador puedes registrar iniciativas. La evaluación con LabLens la
+            realiza un gestor.
+          </p>
+        )}
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar conversaciones"
-            className="h-9 bg-background/50 pl-9"
-            aria-label="Buscar conversaciones"
-          />
-        </div>
+        {canChat ? (
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar conversaciones"
+              className="h-9 bg-background/50 pl-9"
+              aria-label="Buscar conversaciones"
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {isLoading ? (
+        {!canChat ? (
+          <p className="px-3 py-6 text-sm text-muted-foreground">
+            El historial de evaluaciones estará disponible para gestores en el siguiente
+            incremento.
+          </p>
+        ) : isLoading ? (
           <p className="px-3 py-6 text-sm text-muted-foreground">Cargando conversaciones…</p>
         ) : grouped.length === 0 ? (
           <p className="px-3 py-6 text-sm text-muted-foreground">
-            Aún no hay conversaciones. Crea la primera iniciativa.
+            Aún no hay conversaciones de evaluación.
           </p>
         ) : (
           grouped.map((section) => (
@@ -151,15 +168,24 @@ export function ConversationSidebar() {
             Dashboard
           </Link>
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => toast.message('Configuración disponible en una próxima iteración')}
-        >
-          <Settings className="size-4" />
-          Configuración
-        </Button>
+        {showAdmin ? (
+          <Button asChild variant="ghost" className="w-full justify-start">
+            <Link href={routes.admin}>
+              <Settings className="size-4" />
+              Administración
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => toast.message('Configuración disponible en una próxima iteración')}
+          >
+            <Settings className="size-4" />
+            Configuración
+          </Button>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -3,6 +3,7 @@ export const routes = {
   login: '/login',
   register: '/register',
   dashboard: '/dashboard',
+  admin: '/admin',
   chatNew: '/chat/new',
   chat: (id: string) => `/chat/${id}`,
   evaluations: '/evaluations',

@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import type { Response } from 'express';
 import {
@@ -18,11 +19,17 @@ import {
 
 const BCRYPT_ROUNDS = 10;
 
-function toAuthUser(user: { id: string; name: string; email: string }): AuthUser {
+function toAuthUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}): AuthUser {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
+    role: user.role,
   };
 }
 
@@ -30,7 +37,6 @@ function toSession(user: AuthUser, accessToken: string, expiresAt: number): Auth
   return {
     user: {
       ...user,
-      role: 'innovator',
       avatarUrl: null,
     },
     tokens: {
@@ -61,6 +67,7 @@ export async function registerUser(
     name: input.name.trim(),
     email: input.email,
     passwordHash,
+    role: Role.GENERATOR,
   });
 
   return createSession(toAuthUser(user), res);
@@ -120,7 +127,6 @@ export async function getCurrentUser(userId: string): Promise<AuthSessionRespons
 
   return {
     ...toAuthUser(user),
-    role: 'innovator',
     avatarUrl: null,
   };
 }

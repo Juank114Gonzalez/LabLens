@@ -1,37 +1,52 @@
+import { Role } from '@prisma/client';
 import { Router } from 'express';
-import {
-  createConversationController,
-  getConversationController,
-  listConversationsController,
-  sendMessageController,
-} from '../controllers/conversation.controller.js';
+import type { Request, Response } from 'express';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
-import { validateRequest } from '../middlewares/validate.middleware.js';
+import { authorize } from '../middlewares/authorize.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import {
-  conversationIdParamsSchema,
-  sendMessageSchema,
-} from '../validators/conversation.validator.js';
+import { AppError } from '../utils/AppError.js';
+import { sendSuccess } from '../utils/response.js';
 
+/**
+ * Conversation endpoints are kept for frontend compatibility.
+ * Evaluation/chat flow is prepared in the schema but not implemented in this increment.
+ */
 const conversationRouter = Router();
 
-conversationRouter.use(authenticate);
+conversationRouter.use(authenticate, authorize(Role.EVALUATOR, Role.ADMIN));
 
-conversationRouter.get('/', asyncHandler(listConversationsController));
+conversationRouter.get(
+  '/',
+  asyncHandler(async (_req: Request, res: Response) => {
+    sendSuccess(res, []);
+  }),
+);
 
-conversationRouter.post('/', asyncHandler(createConversationController));
+conversationRouter.post(
+  '/',
+  asyncHandler(async () => {
+    throw new AppError(
+      'Evaluation conversations are not available in this increment',
+      501,
+    );
+  }),
+);
 
 conversationRouter.get(
   '/:id',
-  validateRequest(conversationIdParamsSchema, 'params'),
-  asyncHandler(getConversationController),
+  asyncHandler(async () => {
+    throw new AppError('Conversation not found', 404);
+  }),
 );
 
 conversationRouter.post(
   '/:id/messages',
-  validateRequest(conversationIdParamsSchema, 'params'),
-  validateRequest(sendMessageSchema),
-  asyncHandler(sendMessageController),
+  asyncHandler(async () => {
+    throw new AppError(
+      'Evaluation conversations are not available in this increment',
+      501,
+    );
+  }),
 );
 
 export { conversationRouter };

@@ -1,12 +1,21 @@
+import { Role } from '@prisma/client';
 import { Router } from 'express';
 import {
+  createInitiativeController,
+  deleteInitiativeController,
   getInitiativeController,
   listInitiativesController,
+  updateInitiativeController,
 } from '../controllers/initiative.controller.js';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorize } from '../middlewares/authorize.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { initiativeIdParamsSchema } from '../validators/initiative.validator.js';
+import {
+  createInitiativeSchema,
+  initiativeIdParamsSchema,
+  updateInitiativeSchema,
+} from '../validators/initiative.validator.js';
 
 const initiativeRouter = Router();
 
@@ -14,10 +23,32 @@ initiativeRouter.use(authenticate);
 
 initiativeRouter.get('/', asyncHandler(listInitiativesController));
 
+initiativeRouter.post(
+  '/',
+  authorize(Role.GENERATOR, Role.ADMIN),
+  validateRequest(createInitiativeSchema),
+  asyncHandler(createInitiativeController),
+);
+
 initiativeRouter.get(
   '/:id',
   validateRequest(initiativeIdParamsSchema, 'params'),
   asyncHandler(getInitiativeController),
+);
+
+initiativeRouter.patch(
+  '/:id',
+  authorize(Role.GENERATOR, Role.EVALUATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  validateRequest(updateInitiativeSchema),
+  asyncHandler(updateInitiativeController),
+);
+
+initiativeRouter.delete(
+  '/:id',
+  authorize(Role.GENERATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(deleteInitiativeController),
 );
 
 export { initiativeRouter };

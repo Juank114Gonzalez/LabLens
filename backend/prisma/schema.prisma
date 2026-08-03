@@ -7,6 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  GENERATOR
+  EVALUATOR
+  ADMIN
+}
+
+enum InitiativeStatus {
+  DRAFT
+  REGISTERED
+  UNDER_REVIEW
+  EVALUATED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum EvaluationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 enum ConversationStatus {
   COLLECTING_INFORMATION
   READY_TO_EVALUATE
@@ -19,22 +42,16 @@ enum MessageRole {
   system
 }
 
-enum InitiativeStatus {
-  DRAFT
-  IN_PROGRESS
-  EVALUATED
-  ARCHIVED
-}
-
 model User {
   id            String         @id @default(uuid()) @db.Uuid
   name          String
   email         String         @unique
   passwordHash  String
+  role          Role           @default(GENERATOR)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  conversations Conversation[]
   initiatives   Initiative[]
+  evaluations   Evaluation[]   @relation("EvaluationEvaluator")
   refreshTokens RefreshToken[]
 }
 
@@ -52,53 +69,100 @@ model RefreshToken {
 }
 
 model Initiative {
-  id                  String           @id @default(uuid()) @db.Uuid
-  userId              String           @db.Uuid
-  title               String
-  status              InitiativeStatus @default(DRAFT)
-  currentEvaluationId String?          @unique @db.Uuid
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations       Conversation[]
-  evaluations         Evaluation[]     @relation("InitiativeEvaluations")
-  currentEvaluation   Evaluation?      @relation("CurrentEvaluation", fields: [currentEvaluationId], references: [id], onDelete: SetNull)
+  id                   String           @id @default(uuid()) @db.Uuid
+  userId               String           @db.Uuid
+  status               InitiativeStatus @default(REGISTERED)
+  diligenciadoPor      String
+  fechaDiligenciamiento DateTime
+  expectativaSolucion  String
+  nombre               String
+  areaProcesoImpactado String
+  areaInvolucrada      String
+  urgencia             String
+  impacto              String
+  necesidad            String
+  porQueAhora          String
+  paraQue              String
+  comoSeResuelveHoy    String
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyContacts      CompanyContact[]
+  attachments          Attachment[]
+  evaluations          Evaluation[]
 
   @@index([userId, updatedAt])
+  @@index([status])
 }
 
+model CompanyContact {
+  id           String     @id @default(uuid()) @db.Uuid
+  initiativeId String     @db.Uuid
+  empresa      String
+  contacto     String
+  cargo        String
+  correo       String
+  telefono     String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId])
+}
+
+model Attachment {
+  id           String     @id @default(uuid()) @db.Uuid
+  initiativeId String     @db.Uuid
+  publicId     String
+  secureUrl    String
+  originalName String
+  mimeType     String
+  size         Int
+  createdAt    DateTime   @default(now())
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@index([initiativeId])
+  @@index([publicId])
+}
+
+/// Structure prepared for future evaluation flow. No agent logic in this increment.
 model Evaluation {
-  id               String     @id @default(uuid()) @db.Uuid
-  initiativeId     String     @db.Uuid
-  fit              Int
-  impact           Int
-  alignment        Int
-  dataAvailability Int
-  complexity       Int
-  summary          String
-  recommendations  Json
-  createdAt        DateTime   @default(now())
-  initiative       Initiative @relation("InitiativeEvaluations", fields: [initiativeId], references: [id], onDelete: Cascade)
-  currentFor       Initiative? @relation("CurrentEvaluation")
+  id                     String                     @id @default(uuid()) @db.Uuid
+  initiativeId           String                     @db.Uuid
+  evaluatorId            String?                    @db.Uuid
+  status                 EvaluationStatus           @default(PENDING)
+  criteriaSnapshot       Json?
+  weightsSnapshot        Json?
+  results                Json?
+  classificationSnapshot Json?
+  workTableSnapshot      Json?
+  businessCase           String?
+  recommendations        Json?
+  classificationId       String?                    @db.Uuid
+  workTableId            String?                    @db.Uuid
+  evaluatedAt            DateTime?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  initiative             Initiative                 @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  evaluator              User?                      @relation("EvaluationEvaluator", fields: [evaluatorId], references: [id], onDelete: SetNull)
+  classification         IntelligentClassification? @relation(fields: [classificationId], references: [id], onDelete: SetNull)
+  workTable              WorkTable?                 @relation(fields: [workTableId], references: [id], onDelete: SetNull)
+  conversation           Conversation?
 
   @@index([initiativeId, createdAt])
+  @@index([evaluatorId])
 }
 
 model Conversation {
   id           String             @id @default(uuid()) @db.Uuid
-  userId       String             @db.Uuid
-  initiativeId String?            @db.Uuid
+  evaluationId String             @unique @db.Uuid
   title        String?
   status       ConversationStatus @default(COLLECTING_INFORMATION)
   completion   Int                @default(0)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  initiative   Initiative?        @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  evaluation   Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   messages     Message[]
-
-  @@index([userId, updatedAt])
-  @@index([initiativeId])
 }
 
 model Message {
@@ -110,4 +174,44 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+model EvaluationCriteria {
+  id            String   @id @default(uuid()) @db.Uuid
+  nombre        String
+  descripcion   String
+  promptContext String
+  peso          Int
+  activo        Boolean  @default(true)
+  orden         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([activo, orden])
+}
+
+model IntelligentClassification {
+  id            String       @id @default(uuid()) @db.Uuid
+  nombre        String       @unique
+  descripcion   String
+  promptContext String
+  activo        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  evaluations   Evaluation[]
+
+  @@index([activo])
+}
+
+model WorkTable {
+  id            String       @id @default(uuid()) @db.Uuid
+  nombre        String       @unique
+  descripcion   String
+  promptContext String
+  activo        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  evaluations   Evaluation[]
+
+  @@index([activo])
 }

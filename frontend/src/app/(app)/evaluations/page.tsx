@@ -3,11 +3,15 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config/routes';
+import { canAccessChat } from '@/features/auth/lib/roles';
 import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
+import { useAuthStore } from '@/stores/auth.store';
 
 export default function EvaluationsPage() {
+  const user = useAuthStore((state) => state.user);
+  const canChat = Boolean(user && canAccessChat(user.role));
   const { data: items = [] } = useConversations();
   const completed = items.filter((item) => item.status === 'COMPLETED');
 
@@ -26,9 +30,11 @@ export default function EvaluationsPage() {
             title="Sin evaluaciones todavía"
             description="Completa una entrevista con LabLens para generar la ficha de evaluación."
             action={
-              <Button asChild>
-                <Link href={routes.chatNew}>Nueva iniciativa</Link>
-              </Button>
+              canChat ? (
+                <Button asChild>
+                  <Link href={routes.chatNew}>Nueva evaluación</Link>
+                </Button>
+              ) : undefined
             }
           />
         ) : (

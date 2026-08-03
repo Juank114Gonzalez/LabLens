@@ -1,31 +1,57 @@
 import type { Request, Response } from 'express';
-import { getInitiative, listInitiatives } from '../services/initiative.service.js';
+import {
+  createInitiativeForUser,
+  deleteInitiativeForActor,
+  getInitiativeForActor,
+  listInitiativesForActor,
+  updateInitiativeForActor,
+} from '../services/initiative.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
-import type { InitiativeIdParamsDto } from '../validators/initiative.validator.js';
+import type {
+  CreateInitiativeDto,
+  InitiativeIdParamsDto,
+  UpdateInitiativeDto,
+} from '../validators/initiative.validator.js';
 
-function requireUserId(req: Request): string {
-  if (!req.user?.id) {
+function requireUser(req: Request) {
+  if (!req.user) {
     throw new AppError('Authentication required', 401);
   }
-  return req.user.id;
+  return req.user;
 }
 
-export async function listInitiativesController(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const userId = requireUserId(req);
-  const initiatives = await listInitiatives(userId);
-  sendSuccess(res, initiatives);
+export async function listInitiativesController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const data = await listInitiativesForActor(user);
+  sendSuccess(res, data);
 }
 
-export async function getInitiativeController(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const userId = requireUserId(req);
+export async function createInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const body = req.body as CreateInitiativeDto;
+  const data = await createInitiativeForUser(user.id, body);
+  sendSuccess(res, data, 201);
+}
+
+export async function getInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
   const { id } = req.params as InitiativeIdParamsDto;
-  const initiative = await getInitiative(id, userId);
-  sendSuccess(res, initiative);
+  const data = await getInitiativeForActor(id, user);
+  sendSuccess(res, data);
+}
+
+export async function updateInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  const body = req.body as UpdateInitiativeDto;
+  const data = await updateInitiativeForActor(id, user, body);
+  sendSuccess(res, data);
+}
+
+export async function deleteInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  await deleteInitiativeForActor(id, user);
+  sendSuccess(res, { ok: true });
 }

@@ -10,6 +10,7 @@ import {
   logout,
   register,
 } from '@/features/auth/services/auth.service';
+import { homeForRole } from '@/features/auth/lib/roles';
 import type { LoginFormValues, RegisterFormValues } from '@/features/auth/types/auth.schema';
 import { useAuthStore } from '@/stores/auth.store';
 import { useConversationMetaStore } from '@/stores/conversation-meta.store';
@@ -27,7 +28,7 @@ export function useAuth() {
     onSuccess: (session) => {
       setSession(session);
       toast.success('Sesión iniciada');
-      router.replace(routes.dashboard);
+      router.replace(homeForRole(session.user.role));
     },
     onError: (error) => toast.error(getErrorMessage(error, 'No se pudo iniciar sesión')),
   });
@@ -37,7 +38,7 @@ export function useAuth() {
     onSuccess: (session) => {
       setSession(session);
       toast.success('Cuenta creada');
-      router.replace(routes.dashboard);
+      router.replace(homeForRole(session.user.role));
     },
     onError: (error) => toast.error(getErrorMessage(error, 'No se pudo registrar')),
   });

@@ -3,6 +3,10 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { routes } from '@/config/routes';
+import {
+  homeForRole,
+  isPathAllowedForRole,
+} from '@/features/auth/lib/roles';
 import { useAuthStore } from '@/stores/auth.store';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -13,8 +17,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((state) => state.hydrated);
 
   useEffect(() => {
-    if (hydrated && !user) {
+    if (!hydrated) return;
+
+    if (!user) {
       router.replace(`${routes.login}?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    if (!isPathAllowedForRole(pathname, user.role)) {
+      router.replace(homeForRole(user.role));
     }
   }, [hydrated, pathname, router, user]);
 
@@ -31,6 +42,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (!isPathAllowedForRole(pathname, user.role)) {
     return null;
   }
 

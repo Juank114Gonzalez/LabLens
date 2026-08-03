@@ -58,7 +58,8 @@ export type ConversationListItem = {
   completion: number;
   favorite: boolean;
   preview: string;
-  initiativeId: string | null;
+  initiativeId?: string | null;
+  evaluationId?: string | null;
   createdAt: string;
   updatedAt: string;
 };

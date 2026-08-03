@@ -40,6 +40,7 @@ export function signAccessToken(user: AuthUser): { token: string; expiresAt: num
     sub: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
     type: 'access',
   };
 
@@ -85,7 +86,7 @@ export function clearRefreshCookie(res: Response): void {
 export function verifyAccessToken(token: string): AccessTokenPayload {
   try {
     const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload;
-    if (payload.type !== 'access' || !payload.sub) {
+    if (payload.type !== 'access' || !payload.sub || !payload.role) {
       throw new AppError('Invalid access token', 401);
     }
     return payload;

@@ -1,11 +1,10 @@
 export type { ApiErrorResponse, ApiResponse, ApiSuccessResponse } from './api.types.js';
+export type { AuthSessionResponse, AuthUser } from './auth.types.js';
 export type { AgentChatData, ChatMessage, ChatRole } from './chat.types.js';
 export type {
-  CollectingMessageResult,
+  ConversationListItem,
   ConversationMessage,
   ConversationView,
-  EvaluationMessageResult,
-  MessageTurnResult,
 } from './conversation.types.js';
 export type { EvaluationResult } from './evaluation.types.js';
 export type { FitResult } from './fit.types.js';

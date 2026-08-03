@@ -1,9 +1,10 @@
+export type UserRole = 'GENERATOR' | 'EVALUATOR' | 'ADMIN';
+
 export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  /** Optional compatibility field; no RBAC in the backend. */
-  role?: 'innovator' | 'reviewer' | 'admin';
+  role: UserRole;
   avatarUrl?: string | null;
 };
 

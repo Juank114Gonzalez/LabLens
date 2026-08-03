@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
+import { canAccessChat } from '@/features/auth/lib/roles';
 import { useConversations } from '@/features/conversation/hooks/use-conversations';
 import { EmptyState } from '@/shared/components/empty-state';
 import { StatusBadge } from '@/shared/components/status-badge';
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/stores/auth.store';
 
 export function DashboardView() {
   const user = useAuthStore((state) => state.user);
+  const canChat = Boolean(user && canAccessChat(user.role));
   const { data: items = [] } = useConversations();
 
   const recent = [...items]
@@ -38,19 +40,28 @@ export function DashboardView() {
             Hola {user?.name?.split(' ')[0] ?? 'innovador'}, bienvenido al Comité Virtual
           </h1>
           <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
-            LabLens entrevista, estructura y evalúa iniciativas. Aquí construyes el caso —
-            no solo chateas.
+            {canChat
+              ? 'Selecciona iniciativas registradas y conversa con LabLens para obtener evaluaciones.'
+              : 'Registra iniciativas de negocio. Un gestor de evaluación se encargará del análisis con LabLens.'}
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button asChild size="lg" className="rounded-xl">
-              <Link href={routes.chatNew}>
-                Nueva iniciativa
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="rounded-xl">
-              <Link href={routes.evaluations}>Ver evaluaciones</Link>
-            </Button>
+            {canChat ? (
+              <>
+                <Button asChild size="lg" className="rounded-xl">
+                  <Link href={routes.chatNew}>
+                    Nueva evaluación
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="rounded-xl">
+                  <Link href={routes.evaluations}>Ver evaluaciones</Link>
+                </Button>
+              </>
+            ) : (
+              <Button size="lg" className="rounded-xl" disabled>
+                Formulario de iniciativas (próximo incremento)
+              </Button>
+            )}
           </div>
         </div>
       </motion.section>

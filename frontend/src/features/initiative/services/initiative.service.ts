@@ -1,17 +1,30 @@
-import type { InitiativeSummary } from '@/types/initiative';
+import { apiClient } from '@/api/client';
 
-/**
- * TODO(backend): GET /api/initiatives
- * TODO(backend): POST /api/initiatives
- * TODO(backend): GET /api/initiatives/:id
- *
- * For now the frontend maps conversations → initiative summaries locally.
- */
-export async function listInitiatives(): Promise<InitiativeSummary[]> {
-  return [];
+/** Domain initiative as returned by the backend CRUD. */
+export type DomainInitiative = {
+  id: string;
+  userId: string;
+  status: string;
+  nombre: string;
+  diligenciadoPor: string;
+  fechaDiligenciamiento: string;
+  expectativaSolucion: string;
+  areaProcesoImpactado: string;
+  areaInvolucrada: string;
+  urgencia: string;
+  impacto: string;
+  necesidad: string;
+  porQueAhora: string;
+  paraQue: string;
+  comoSeResuelveHoy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listInitiatives(): Promise<DomainInitiative[]> {
+  return apiClient.get<DomainInitiative[]>('/api/initiatives');
 }
 
-export async function createInitiative(name: string): Promise<InitiativeSummary> {
-  void name;
-  throw new Error('TODO(backend): POST /api/initiatives is not implemented yet');
+export async function getInitiative(id: string): Promise<DomainInitiative> {
+  return apiClient.get<DomainInitiative>(`/api/initiatives/${id}`);
 }
