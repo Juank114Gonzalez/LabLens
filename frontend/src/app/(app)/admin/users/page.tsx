@@ -80,7 +80,8 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-6 overflow-y-auto p-6 sm:p-8">
+    <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
         <h1 className="font-heading text-3xl font-semibold">Usuarios</h1>
         <p className="text-sm text-muted-foreground">Administra roles, acceso y eliminaciones.</p>
@@ -190,6 +191,7 @@ export default function AdminUsersPage() {
           </TableBody>
         </Table>
       )}
+      </div>
     </div>
   );
 }

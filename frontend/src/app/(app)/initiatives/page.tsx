@@ -48,8 +48,8 @@ export default function InitiativesPage() {
   }
 
   return (
-    <ScrollablePage className="p-6 sm:p-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <ScrollablePage className="p-6 sm:p-8" contentClassName="max-w-6xl flex flex-col gap-6">
+      <>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="font-heading text-3xl font-semibold">
@@ -163,7 +163,7 @@ export default function InitiativesPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </>
     </ScrollablePage>
   );
 }
