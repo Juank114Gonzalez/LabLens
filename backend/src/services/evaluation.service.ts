@@ -7,6 +7,7 @@ import { listCriteria } from '../repositories/criteria.repository.js';
 import { getInitiativeOrThrow } from '../repositories/domain-initiative.repository.js';
 import {
   createEvaluationWithConversation,
+  deleteEvaluation,
   getEvaluationOrThrow,
   listEvaluationsForUser,
 } from '../repositories/evaluation.repository.js';
@@ -195,6 +196,19 @@ export async function getEvaluationResultForActor(
   }
 
   return toEvaluationResultView(evaluation);
+}
+
+export async function deleteEvaluationForAdmin(
+  evaluationId: string,
+  actor: { id: string; role: Role },
+) {
+  if (actor.role !== Role.ADMIN) {
+    throw new AppError('Forbidden', 403);
+  }
+
+  await getEvaluationOrThrow(evaluationId);
+  await deleteEvaluation(evaluationId);
+  return { ok: true };
 }
 
 /**

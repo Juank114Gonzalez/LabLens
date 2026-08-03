@@ -27,3 +27,7 @@ export async function listEvaluations() {
     }>
   >('/api/evaluations');
 }
+
+export async function deleteEvaluation(id: string): Promise<void> {
+  await apiClient.delete(`/api/evaluations/${id}`);
+}

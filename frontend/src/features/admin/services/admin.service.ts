@@ -36,6 +36,7 @@ export const updateUserRole = (id: string, role: UserRole) =>
   apiClient.patch<AdminUser>(`/api/users/${id}/role`, { role });
 export const resetPassword = (id: string) =>
   apiClient.post<{ message: string }>(`/api/users/${id}/reset-password`);
+export const deleteUser = (id: string) => apiClient.delete(`/api/users/${id}`);
 
 export const listCriteria = () => apiClient.get<CriteriaItem[]>('/api/evaluation-criteria');
 export const createCriteria = (body: Omit<CriteriaItem, 'id'>) =>

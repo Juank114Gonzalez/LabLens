@@ -2,20 +2,26 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { routes } from '@/config/routes';
 import { EvaluationsTable } from '@/features/initiative/components/evaluations-table';
+import { deleteEvaluation } from '@/features/evaluation/services/evaluation.service';
 import {
   getInitiative,
   listInitiativeEvaluations,
 } from '@/features/initiative/services/initiative.service';
+import { useAuthStore } from '@/stores/auth.store';
 
 type Props = { params: Promise<{ id: string }> };
 
 export default function InitiativeEvaluationsPage({ params }: Props) {
   const { id } = use(params);
+  const queryClient = useQueryClient();
+  const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
+
   const initiativeQuery = useQuery({
     queryKey: ['initiative', id],
     queryFn: () => getInitiative(id),
@@ -23,6 +29,17 @@ export default function InitiativeEvaluationsPage({ params }: Props) {
   const evaluationsQuery = useQuery({
     queryKey: ['initiative-evaluations', id],
     queryFn: () => listInitiativeEvaluations(id),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (evaluationId: string) => deleteEvaluation(evaluationId),
+    onSuccess: () => {
+      toast.success('Evaluación eliminada');
+      void queryClient.invalidateQueries({ queryKey: ['initiative-evaluations', id] });
+      void queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      void queryClient.invalidateQueries({ queryKey: ['initiative', id] });
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   return (
@@ -41,7 +58,12 @@ export default function InitiativeEvaluationsPage({ params }: Props) {
       {evaluationsQuery.isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : (
-        <EvaluationsTable items={evaluationsQuery.data ?? []} />
+        <EvaluationsTable
+          items={evaluationsQuery.data ?? []}
+          canDelete={isAdmin}
+          isDeleting={deleteMutation.isPending}
+          onDelete={(evaluationId) => deleteMutation.mutate(evaluationId)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 import { Router } from 'express';
 import {
+  deleteEvaluationController,
   evaluationIdParamsSchema,
   getEvaluationController,
   listEvaluationsController,
@@ -20,6 +21,13 @@ evaluationRouter.get(
   '/:id',
   validateRequest(evaluationIdParamsSchema, 'params'),
   asyncHandler(getEvaluationController),
+);
+
+evaluationRouter.delete(
+  '/:id',
+  authorize(Role.ADMIN),
+  validateRequest(evaluationIdParamsSchema, 'params'),
+  asyncHandler(deleteEvaluationController),
 );
 
 export { evaluationRouter };

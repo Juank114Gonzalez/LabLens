@@ -1,17 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { routes } from '@/config/routes';
-import { listEvaluations } from '@/features/evaluation/services/evaluation.service';
+import {
+  deleteEvaluation,
+  listEvaluations,
+} from '@/features/evaluation/services/evaluation.service';
 import { EmptyState } from '@/shared/components/empty-state';
+import { useAuthStore } from '@/stores/auth.store';
 
 export default function EvaluationsPage() {
+  const queryClient = useQueryClient();
+  const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
   const query = useQuery({
     queryKey: ['evaluations'],
     queryFn: listEvaluations,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteEvaluation(id),
+    onSuccess: () => {
+      toast.success('Evaluación eliminada');
+      void queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   return (
@@ -22,6 +39,7 @@ export default function EvaluationsPage() {
             <h1 className="font-heading text-3xl font-semibold">Evaluaciones</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Cada evaluación es inmutable y tiene una conversación asociada.
+              {isAdmin ? ' Como admin puedes eliminarlas.' : ''}
             </p>
           </div>
           <Button asChild>
@@ -46,34 +64,56 @@ export default function EvaluationsPage() {
           />
         ) : (
           <ul className="space-y-2">
-            {query.data.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={
-                    item.status === 'COMPLETED'
-                      ? routes.evaluation(item.id)
-                      : item.conversation
-                        ? routes.chat(item.conversation.id)
-                        : routes.evaluation(item.id)
-                  }
-                  className="block rounded-xl border border-border/70 px-4 py-3 transition hover:bg-muted/40"
+            {query.data.map((item) => {
+              const href =
+                item.status === 'COMPLETED'
+                  ? routes.evaluation(item.id)
+                  : item.conversation
+                    ? routes.chat(item.conversation.id)
+                    : routes.evaluation(item.id);
+
+              return (
+                <li
+                  key={item.id}
+                  className="flex items-stretch gap-2 rounded-xl border border-border/70 transition hover:bg-muted/40"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{item.initiative.nombre || 'Iniciativa'}</p>
+                  <Link href={href} className="min-w-0 flex-1 px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{item.initiative.nombre || 'Iniciativa'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.status}
+                          {item.readinessStatus ? ` · ${item.readinessStatus}` : ''}
+                          {item.evaluator ? ` · ${item.evaluator.name}` : ''}
+                        </p>
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        {item.status}
-                        {item.readinessStatus ? ` · ${item.readinessStatus}` : ''}
-                        {item.evaluator ? ` · ${item.evaluator.name}` : ''}
+                        {new Date(item.updatedAt ?? item.createdAt).toLocaleString('es-CO')}
                       </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(item.updatedAt ?? item.createdAt).toLocaleString('es-CO')}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
+                  </Link>
+                  {isAdmin ? (
+                    <div className="flex items-center pr-3">
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => {
+                          const ok = window.confirm(
+                            `¿Eliminar la evaluación de "${item.initiative.nombre || 'Iniciativa'}"? Se borrará también su conversación.`,
+                          );
+                          if (ok) deleteMutation.mutate(item.id);
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

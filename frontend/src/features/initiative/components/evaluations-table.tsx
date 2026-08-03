@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -9,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { routes } from '@/config/routes';
 import type { EvaluationSummary } from '@/features/initiative/types';
 import { formatShortDate } from '@/shared/lib/dates';
 import { EmptyState } from '@/shared/components/empty-state';
@@ -26,7 +30,19 @@ function criteriaVersion(snapshot: unknown): string {
   return '—';
 }
 
-export function EvaluationsTable({ items }: { items: EvaluationSummary[] }) {
+type EvaluationsTableProps = {
+  items: EvaluationSummary[];
+  canDelete?: boolean;
+  onDelete?: (id: string) => void;
+  isDeleting?: boolean;
+};
+
+export function EvaluationsTable({
+  items,
+  canDelete = false,
+  onDelete,
+  isDeleting,
+}: EvaluationsTableProps) {
   if (items.length === 0) {
     return (
       <EmptyState
@@ -76,7 +92,30 @@ export function EvaluationsTable({ items }: { items: EvaluationSummary[] }) {
             <TableCell>
               <Badge variant="secondary">{item.status}</Badge>
             </TableCell>
-            <TableCell className="text-muted-foreground">Ver</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-1">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={routes.evaluation(item.id)}>Ver</Link>
+                </Button>
+                {canDelete ? (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      const ok = window.confirm(
+                        '¿Eliminar esta evaluación? Se borrará también su conversación.',
+                      );
+                      if (ok) onDelete?.(item.id);
+                    }}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                ) : null}
+              </div>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

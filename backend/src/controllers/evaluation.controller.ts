@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import {
+  deleteEvaluationForAdmin,
   getEvaluationResultForActor,
   listEvaluationsForActor,
 } from '../services/evaluation.service.js';
@@ -27,6 +28,12 @@ export async function getEvaluationController(req: Request, res: Response) {
   const user = requireUser(req);
   const { id } = evaluationIdParamsSchema.parse(req.params);
   sendSuccess(res, await getEvaluationResultForActor(id, user));
+}
+
+export async function deleteEvaluationController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = evaluationIdParamsSchema.parse(req.params);
+  sendSuccess(res, await deleteEvaluationForAdmin(id, user));
 }
 
 export { evaluationIdParamsSchema };

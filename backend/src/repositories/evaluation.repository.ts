@@ -95,6 +95,10 @@ export async function updateEvaluation(
   });
 }
 
+export async function deleteEvaluation(id: string) {
+  await prisma.evaluation.delete({ where: { id } });
+}
+
 export async function listEvaluationsForUser(options: {
   evaluatorId?: string;
   all?: boolean;

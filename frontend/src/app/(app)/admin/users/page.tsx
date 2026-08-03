@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  deleteUser,
   listUsers,
   resetPassword,
   updateUser,
@@ -25,11 +27,13 @@ import {
 } from '@/features/admin/services/admin.service';
 import type { UserRole } from '@/types/auth';
 import { formatShortDate } from '@/shared/lib/dates';
+import { useAuthStore } from '@/stores/auth.store';
 
 const ROLES: UserRole[] = ['GENERATOR', 'EVALUATOR', 'ADMIN'];
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const query = useQuery({ queryKey: ['admin-users'], queryFn: listUsers });
@@ -66,11 +70,20 @@ export default function AdminUsersPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteUser(id),
+    onSuccess: () => {
+      toast.success('Usuario eliminado');
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-6 overflow-y-auto p-6 sm:p-8">
       <div>
         <h1 className="font-heading text-3xl font-semibold">Usuarios</h1>
-        <p className="text-sm text-muted-foreground">Administra roles y acceso.</p>
+        <p className="text-sm text-muted-foreground">Administra roles, acceso y eliminaciones.</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -141,18 +154,36 @@ export default function AdminUsersPage() {
                 </TableCell>
                 <TableCell>{formatShortDate(user.createdAt)}</TableCell>
                 <TableCell>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      void resetPassword(user.id)
-                        .then((result) => toast.message(result.message))
-                        .catch((error: Error) => toast.error(error.message))
-                    }
-                  >
-                    Resetear contraseña
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void resetPassword(user.id)
+                          .then((result) => toast.message(result.message))
+                          .catch((error: Error) => toast.error(error.message))
+                      }
+                    >
+                      Resetear contraseña
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={user.id === currentUserId || deleteMutation.isPending}
+                      onClick={() => {
+                        if (user.id === currentUserId) return;
+                        const ok = window.confirm(
+                          `¿Eliminar al usuario ${user.name}? Se borrarán también sus iniciativas asociadas.`,
+                        );
+                        if (ok) deleteMutation.mutate(user.id);
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Eliminar
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

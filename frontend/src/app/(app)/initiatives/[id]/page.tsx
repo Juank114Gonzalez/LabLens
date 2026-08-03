@@ -2,8 +2,9 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,21 +12,48 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { routes } from '@/config/routes';
 import { EvaluationsTable } from '@/features/initiative/components/evaluations-table';
+import { deleteEvaluation } from '@/features/evaluation/services/evaluation.service';
 import {
+  deleteInitiative,
   downloadEvidencesZip,
   getInitiative,
 } from '@/features/initiative/services/initiative.service';
 import { formatBytes, INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
+import { useAuthStore } from '@/stores/auth.store';
 
 type Props = { params: Promise<{ id: string }> };
 
 export default function InitiativeDetailPage({ params }: Props) {
   const { id } = use(params);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const role = useAuthStore((state) => state.user?.role);
+  const isAdmin = role === 'ADMIN';
   const query = useQuery({
     queryKey: ['initiative', id],
     queryFn: () => getInitiative(id),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteInitiative(id),
+    onSuccess: () => {
+      toast.success('Iniciativa eliminada');
+      void queryClient.invalidateQueries({ queryKey: ['initiatives'] });
+      router.replace(routes.initiatives);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteEvaluationMutation = useMutation({
+    mutationFn: (evaluationId: string) => deleteEvaluation(evaluationId),
+    onSuccess: () => {
+      toast.success('Evaluación eliminada');
+      void queryClient.invalidateQueries({ queryKey: ['initiative', id] });
+      void queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   if (query.isLoading) {
@@ -60,7 +88,7 @@ export default function InitiativeDetailPage({ params }: Props) {
             {data.user?.name ?? data.diligenciadoPor} · {formatShortDate(data.fechaDiligenciamiento)}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {data.status === 'DRAFT' ? (
             <Button asChild variant="outline">
               <Link href={routes.initiativeEdit(data.id)}>Continuar borrador</Link>
@@ -76,6 +104,22 @@ export default function InitiativeDetailPage({ params }: Props) {
             <Download className="size-4" />
             Evidencias
           </Button>
+          {isAdmin || data.status === 'DRAFT' ? (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                const ok = window.confirm(
+                  `¿Eliminar la iniciativa "${data.nombre || 'Sin nombre'}"? También se eliminarán sus evaluaciones y evidencias.`,
+                );
+                if (ok) deleteMutation.mutate();
+              }}
+            >
+              <Trash2 className="size-4" />
+              Eliminar
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -144,7 +188,12 @@ export default function InitiativeDetailPage({ params }: Props) {
           </Button>
         </CardHeader>
         <CardContent>
-          <EvaluationsTable items={data.evaluations ?? []} />
+          <EvaluationsTable
+            items={data.evaluations ?? []}
+            canDelete={isAdmin}
+            isDeleting={deleteEvaluationMutation.isPending}
+            onDelete={(evaluationId) => deleteEvaluationMutation.mutate(evaluationId)}
+          />
         </CardContent>
       </Card>
     </div>

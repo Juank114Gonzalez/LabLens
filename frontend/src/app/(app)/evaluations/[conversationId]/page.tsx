@@ -2,15 +2,21 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { routes } from '@/config/routes';
 import { getConversation } from '@/features/conversation/services/conversation.service';
-import { getEvaluation } from '@/features/evaluation/services/evaluation.service';
+import {
+  deleteEvaluation,
+  getEvaluation,
+} from '@/features/evaluation/services/evaluation.service';
 import { EvaluationResultPanel } from '@/features/evaluation/components/evaluation-result-panel';
 import { EmptyState } from '@/shared/components/empty-state';
+import { useAuthStore } from '@/stores/auth.store';
 
 type EvaluationDetailPageProps = {
   params: Promise<{ conversationId: string }>;
@@ -21,6 +27,9 @@ type EvaluationDetailPageProps = {
  */
 export default function EvaluationDetailPage({ params }: EvaluationDetailPageProps) {
   const { conversationId: id } = use(params);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
 
   const byEvaluation = useQuery({
     queryKey: ['evaluation', id],
@@ -39,15 +48,44 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
   const isLoading =
     byEvaluation.isLoading || (byEvaluation.isError && byConversation.isLoading);
 
+  const deleteMutation = useMutation({
+    mutationFn: (evaluationId: string) => deleteEvaluation(evaluationId),
+    onSuccess: () => {
+      toast.success('Evaluación eliminada');
+      void queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      router.replace(routes.evaluations);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   return (
     <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
       <div className="mx-auto max-w-3xl space-y-6">
-        <Button asChild variant="ghost" className="-ml-2">
-          <Link href={routes.evaluations}>
-            <ArrowLeft className="size-4" />
-            Volver
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button asChild variant="ghost" className="-ml-2">
+            <Link href={routes.evaluations}>
+              <ArrowLeft className="size-4" />
+              Volver
+            </Link>
+          </Button>
+          {isAdmin && evaluation?.id ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                const ok = window.confirm(
+                  '¿Eliminar esta evaluación? Se borrará también su conversación.',
+                );
+                if (ok) deleteMutation.mutate(evaluation.id);
+              }}
+            >
+              <Trash2 className="size-3.5" />
+              Eliminar evaluación
+            </Button>
+          ) : null}
+        </div>
 
         {isLoading ? (
           <div className="space-y-3">
