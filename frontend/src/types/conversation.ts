@@ -34,6 +34,7 @@ export type ConversationView = {
   evaluation: EvaluationResult | null;
   messageCount: number;
   elapsedMs: number;
+  canGenerate?: boolean;
   createdAt: string;
   updatedAt: string;
   messages?: ConversationMessage[];
@@ -73,10 +74,12 @@ export type ConversationListItem = {
 };
 
 export type StartEvaluationResult = {
+  mode: 'interview' | 'direct';
   evaluationId: string;
   conversationId: string;
   status: string;
   readinessStatus: ReadinessStatus;
   readiness: EvaluationReadiness | null;
   openingMessage: string;
+  evaluation: EvaluationResult | null;
 };

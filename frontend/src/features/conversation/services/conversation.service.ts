@@ -11,9 +11,11 @@ type ConversationListApiItem = Omit<ConversationListItem, 'favorite'>;
 
 export async function startEvaluation(
   initiativeId: string,
+  mode: 'interview' | 'direct' = 'interview',
 ): Promise<StartEvaluationResult> {
   return apiClient.post<StartEvaluationResult>(
     `/api/initiatives/${initiativeId}/evaluations`,
+    { mode },
   );
 }
 

@@ -53,8 +53,15 @@ export const initiativeIdParamsSchema = z.object({
   id: z.string().uuid('id must be a valid UUID'),
 });
 
+export const startEvaluationBodySchema = z
+  .object({
+    mode: z.enum(['interview', 'direct']).optional(),
+  })
+  .default({});
+
 export type CreateInitiativeDto = z.infer<typeof createInitiativeSchema>;
 export type UpdateInitiativeDto = z.infer<typeof updateInitiativeSchema>;
 export type RegisterInitiativeDto = z.infer<typeof registerInitiativeSchema>;
 export type InitiativeIdParamsDto = z.infer<typeof initiativeIdParamsSchema>;
+export type StartEvaluationBodyDto = z.infer<typeof startEvaluationBodySchema>;
 export type CompanyContactDto = z.infer<typeof companyContactSchema>;

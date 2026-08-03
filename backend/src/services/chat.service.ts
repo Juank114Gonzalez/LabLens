@@ -10,7 +10,7 @@ import type { EvaluationReadiness } from '../types/evaluation-domain.types.js';
 import type { ChatMessage } from '../types/chat.types.js';
 import type { ToolContext } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { runLabLensAgent } from './agent.service.js';
+import { runInterviewAgent } from './agent.service.js';
 
 function assertEvaluator(role: Role) {
   if (role !== Role.EVALUATOR && role !== Role.ADMIN) {
@@ -64,6 +64,7 @@ export function mapConversationView(conversation: Awaited<
         : null,
     messageCount: conversation.messages.length,
     elapsedMs,
+    canGenerate: evaluation?.status !== EvaluationStatus.COMPLETED,
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
     messages: conversation.messages.map((item) => ({
@@ -166,7 +167,7 @@ export async function sendConversationMessage(
     userId: actor.id,
   };
 
-  const agent = await runLabLensAgent(history, context);
+  const agent = await runInterviewAgent(history, context);
 
   await createMessage({
     conversationId,
@@ -188,7 +189,8 @@ export async function sendConversationMessage(
     readinessLabel: view.readinessLabel,
     readiness: view.readiness,
     reply: agent.message,
-    canGenerate: view.readinessStatus === 'READY',
+    /** El usuario controla cuándo evaluar; readiness es solo señal. */
+    canGenerate: view.status !== 'COMPLETED',
   };
 }
 

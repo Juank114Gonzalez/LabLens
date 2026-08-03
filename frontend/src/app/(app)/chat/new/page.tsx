@@ -14,6 +14,8 @@ import { startEvaluation } from '@/features/conversation/services/conversation.s
 import { listInitiatives } from '@/features/initiative/services/initiative.service';
 import { EmptyState } from '@/shared/components/empty-state';
 
+type StartMode = 'interview' | 'direct';
+
 export default function NewEvaluationChatPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -25,18 +27,26 @@ export default function NewEvaluationChatPage() {
   });
 
   const eligible = (initiativesQuery.data ?? []).filter(
-    (item) => item.status !== 'DRAFT' && item.status !== 'ARCHIVED',
+    (item) => item.status !== 'ARCHIVED',
   );
 
   const startMutation = useMutation({
-    mutationFn: () => startEvaluation(selectedId),
+    mutationFn: (mode: StartMode) => startEvaluation(selectedId, mode),
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
-      toast.success('Evaluación iniciada');
+      await queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+
+      if (result.mode === 'direct' && result.evaluation?.id) {
+        toast.success('Evaluación generada');
+        router.replace(routes.evaluation(result.evaluation.id));
+        return;
+      }
+
+      toast.success('Entrevista iniciada');
       router.replace(routes.chat(result.conversationId));
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'No se pudo iniciar la evaluación'));
+      toast.error(getErrorMessage(error, 'No se pudo iniciar'));
     },
   });
 
@@ -54,8 +64,8 @@ export default function NewEvaluationChatPage() {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <EmptyState
-          title="No hay iniciativas listas para evaluar"
-          description="Las iniciativas deben estar registradas (no en borrador)."
+          title="No hay iniciativas disponibles"
+          description="Crea o registra una iniciativa para entrevistarla o evaluarla."
           action={
             <Button asChild variant="outline">
               <Link href={routes.evaluations}>Volver</Link>
@@ -72,8 +82,8 @@ export default function NewEvaluationChatPage() {
         <div>
           <h1 className="font-heading text-3xl font-semibold">Nueva evaluación</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Selecciona una iniciativa. Se creará una evaluación y conversación nuevas, con el
-            primer mensaje del agente.
+            Puedes evaluar desde ya con los datos de la iniciativa, o iniciar una entrevista para
+            enriquecer el contexto y generar otra evaluación después.
           </p>
         </div>
 
@@ -98,13 +108,27 @@ export default function NewEvaluationChatPage() {
           ))}
         </ul>
 
-        <Button
-          type="button"
-          disabled={!selectedId || startMutation.isPending}
-          onClick={() => startMutation.mutate()}
-        >
-          {startMutation.isPending ? 'Iniciando entrevista…' : 'Iniciar evaluación'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={!selectedId || startMutation.isPending}
+            onClick={() => startMutation.mutate('interview')}
+          >
+            {startMutation.isPending && startMutation.variables === 'interview'
+              ? 'Iniciando entrevista…'
+              : 'Iniciar entrevista'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!selectedId || startMutation.isPending}
+            onClick={() => startMutation.mutate('direct')}
+          >
+            {startMutation.isPending && startMutation.variables === 'direct'
+              ? 'Evaluando…'
+              : 'Evaluar ahora'}
+          </Button>
+        </div>
       </div>
     </div>
   );

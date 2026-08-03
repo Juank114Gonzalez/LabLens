@@ -14,6 +14,7 @@ import type {
   CreateInitiativeDto,
   InitiativeIdParamsDto,
   RegisterInitiativeDto,
+  StartEvaluationBodyDto,
   UpdateInitiativeDto,
 } from '../validators/initiative.validator.js';
 
@@ -73,5 +74,6 @@ export async function listInitiativeEvaluationsController(req: Request, res: Res
 export async function startEvaluationController(req: Request, res: Response) {
   const user = requireUser(req);
   const { id } = req.params as InitiativeIdParamsDto;
-  sendSuccess(res, await startEvaluation(id, user), 201);
+  const body = (req.body ?? {}) as StartEvaluationBodyDto;
+  sendSuccess(res, await startEvaluation(id, user, body.mode ?? 'interview'), 201);
 }

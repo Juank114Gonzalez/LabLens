@@ -34,13 +34,17 @@ export function EvaluationStatusPanel({
   isGenerating,
 }: EvaluationStatusPanelProps) {
   const setRightPanelOpen = useUiStore((state) => state.setRightPanelOpen);
+  const canGenerate =
+    Boolean(conversation) &&
+    conversation?.status !== 'COMPLETED' &&
+    (conversation?.canGenerate ?? true);
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-l border-border/70 bg-sidebar/40">
       <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
         <div>
           <p className="font-heading text-sm font-medium">Estado de Evaluación</p>
-          <p className="text-xs text-muted-foreground">Preparación de la entrevista</p>
+          <p className="text-xs text-muted-foreground">Modo entrevista · sin juicios</p>
         </div>
         <Button
           type="button"
@@ -62,7 +66,7 @@ export function EvaluationStatusPanel({
           </div>
         ) : !conversation ? (
           <div className="rounded-2xl border border-dashed border-border/80 p-6 text-sm text-muted-foreground">
-            Selecciona una iniciativa registrada para iniciar una evaluación.
+            Selecciona una iniciativa para iniciar una entrevista o evaluación directa.
           </div>
         ) : (
           <>
@@ -99,21 +103,30 @@ export function EvaluationStatusPanel({
               >
                 {conversation.readinessLabel}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Señal orientativa. Puedes generar la evaluación cuando quieras.
+              </p>
             </div>
 
-            {conversation.readinessStatus === 'READY' &&
-            conversation.status !== 'COMPLETED' ? (
+            {canGenerate ? (
               <div className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
-                <p className="text-sm leading-relaxed">
-                  Considero que tengo suficiente información. ¿Deseas generar la evaluación?
-                </p>
+                {conversation.readinessStatus === 'READY' ? (
+                  <p className="text-sm leading-relaxed">
+                    Considero que tengo suficiente información. ¿Deseas generar la evaluación?
+                  </p>
+                ) : (
+                  <p className="text-sm leading-relaxed">
+                    Puedes generar la evaluación ahora con la información disponible, o continuar
+                    la entrevista para enriquecerla.
+                  </p>
+                )}
                 <Button
                   type="button"
                   className="w-full"
                   onClick={onGenerate}
                   disabled={isGenerating}
                 >
-                  {isGenerating ? 'Generando…' : 'Generar evaluación'}
+                  {isGenerating ? 'Ejecutando pipeline…' : 'Generar evaluación'}
                 </Button>
               </div>
             ) : null}

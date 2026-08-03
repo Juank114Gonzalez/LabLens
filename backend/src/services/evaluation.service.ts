@@ -11,29 +11,20 @@ import {
   listEvaluationsForUser,
 } from '../repositories/evaluation.repository.js';
 import { createMessage } from '../repositories/message.repository.js';
-import type { ChatMessage } from '../types/chat.types.js';
 import type { ToolContext } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { runLabLensAgent } from './agent.service.js';
+import { runInterviewAgent } from './agent.service.js';
+import { runEvaluationPipeline } from './evaluation-pipeline.service.js';
 
-const OPENING_PROMPT = `Inicia la entrevista de evaluación de esta iniciativa.
-Usa getInitiative, getPreviousEvaluations y getEvaluationCriteria (y searchKnowledge si aporta).
-Confirma que revisaste el material existente (formulario, empresas, evidencias, historial).
-No pidas datos que ya existan. No generes la evaluación todavía.
-Actualiza updateReadiness con tu diagnóstico inicial.
-Abre con un tono de Analista Senior, similar a:
+export type EvaluationStartMode = 'interview' | 'direct';
+
+const OPENING_PROMPT = `Inicia la entrevista (Modo Entrevista) de esta iniciativa.
+Usa getInitiative, getPreviousEvaluations y getEvaluationCriteria si aporta.
+Confirma que revisaste el material. No emitas scores ni juicios.
+No generes la evaluación. Actualiza updateReadiness con diagnóstico inicial.
+Abre como Analista Senior, similar a:
 "He revisado la iniciativa. Ahora necesito ampliar algunos aspectos antes de generar una evaluación."
 Haz una sola pregunta de profundización.`;
-
-const GENERATE_PROMPT = `El gestor confirmó que desea generar la evaluación ahora.
-Con la información de la conversación y las herramientas:
-1) getEvaluationCriteria — puntúa CADA criterio activo (0-100) con justificación.
-2) getClassifications — elige UNA y justifica.
-3) getWorkTables — elige UNA y justifica.
-4) Define prioridad Alta|Media|Baja con justificación.
-5) generateBusinessCase con un contexto sintético breve.
-6) saveEvaluation con IDs reales.
-Luego responde al gestor con un resumen ejecutivo corto del resultado (Fit lo calcula el backend).`;
 
 function assertEvaluator(role: Role) {
   if (role !== Role.EVALUATOR && role !== Role.ADMIN) {
@@ -49,21 +40,11 @@ function buildConfigVersion(criteria: { id: string; peso: number; updatedAt: Dat
   return `cfg-${stamp}-${Buffer.from(hash).toString('base64url').slice(0, 16)}`;
 }
 
-export async function startEvaluationForInitiative(
+async function createEvaluationShell(
   initiativeId: string,
-  actor: { id: string; role: Role },
+  actorId: string,
+  initiativeName: string,
 ) {
-  assertEvaluator(actor.role);
-
-  const initiative = await getInitiativeOrThrow(initiativeId, {
-    userId: actor.id,
-    isAdmin: true,
-  });
-
-  if (initiative.status === InitiativeStatus.DRAFT) {
-    throw new AppError('La iniciativa debe estar registrada para evaluarse', 409);
-  }
-
   const criteria = (await listCriteria()).filter((item) => item.activo);
   if (criteria.length === 0) {
     throw new AppError('No hay criterios activos configurados', 409);
@@ -72,16 +53,52 @@ export async function startEvaluationForInitiative(
   const weightsSnapshot = Object.fromEntries(
     criteria.map((item) => [item.id, item.peso]),
   );
-  const configVersion = buildConfigVersion(criteria);
 
-  const evaluation = await createEvaluationWithConversation({
+  return createEvaluationWithConversation({
     initiativeId,
-    evaluatorId: actor.id,
-    title: `Evaluación · ${initiative.nombre || 'Iniciativa'}`,
+    evaluatorId: actorId,
+    title: `Evaluación · ${initiativeName || 'Iniciativa'}`,
     criteriaSnapshot: criteria,
     weightsSnapshot,
-    configVersion,
+    configVersion: buildConfigVersion(criteria),
   });
+}
+
+function buildTranscript(
+  messages: Array<{ role: string; content: string }>,
+): string {
+  return messages
+    .filter((item) => item.role === 'user' || item.role === 'assistant')
+    .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
+    .join('\n\n');
+}
+
+/**
+ * Starts a new evaluation shell.
+ * - interview: conversational enrichment (no scores)
+ * - direct: runs evaluation pipeline immediately on initiative data
+ */
+export async function startEvaluationForInitiative(
+  initiativeId: string,
+  actor: { id: string; role: Role },
+  mode: EvaluationStartMode = 'interview',
+) {
+  assertEvaluator(actor.role);
+
+  const initiative = await getInitiativeOrThrow(initiativeId, {
+    userId: actor.id,
+    isAdmin: true,
+  });
+
+  if (initiative.status === InitiativeStatus.ARCHIVED) {
+    throw new AppError('No se pueden evaluar iniciativas archivadas', 409);
+  }
+
+  const evaluation = await createEvaluationShell(
+    initiativeId,
+    actor.id,
+    initiative.nombre,
+  );
 
   const conversation = evaluation.conversation;
   if (!conversation) {
@@ -94,7 +111,43 @@ export async function startEvaluationForInitiative(
     userId: actor.id,
   };
 
-  const agent = await runLabLensAgent(
+  if (mode === 'direct') {
+    await createMessage({
+      conversationId: conversation.id,
+      role: MessageRole.system,
+      content:
+        'Evaluación directa sin entrevista. El pipeline usó los datos de la iniciativa al momento de la generación.',
+    });
+
+    const pipeline = await runEvaluationPipeline({
+      evaluationId: evaluation.id,
+      initiativeId,
+      transcript: '',
+    });
+
+    await createMessage({
+      conversationId: conversation.id,
+      role: MessageRole.assistant,
+      content: pipeline.report,
+    });
+
+    const refreshed = await getEvaluationOrThrow(evaluation.id);
+    return {
+      mode: 'direct' as const,
+      evaluationId: refreshed.id,
+      conversationId: conversation.id,
+      status: refreshed.status,
+      readinessStatus: refreshed.readinessStatus,
+      readiness: refreshed.readiness,
+      openingMessage: pipeline.report,
+      evaluation: toEvaluationResultView({
+        ...refreshed,
+        conversation: { id: conversation.id },
+      }),
+    };
+  }
+
+  const agent = await runInterviewAgent(
     [{ role: 'user', content: OPENING_PROMPT }],
     context,
   );
@@ -107,12 +160,14 @@ export async function startEvaluationForInitiative(
 
   const refreshed = await getEvaluationOrThrow(evaluation.id);
   return {
+    mode: 'interview' as const,
     evaluationId: refreshed.id,
     conversationId: refreshed.conversation!.id,
     status: refreshed.status,
     readinessStatus: refreshed.readinessStatus,
     readiness: refreshed.readiness,
     openingMessage: agent.message,
+    evaluation: null,
   };
 }
 
@@ -142,6 +197,10 @@ export async function getEvaluationResultForActor(
   return toEvaluationResultView(evaluation);
 }
 
+/**
+ * Modo Evaluación: pipeline determinístico. El usuario decide cuándo.
+ * No requiere readiness READY; la entrevista solo enriquece el contexto.
+ */
 export async function generateEvaluationFromConversation(
   conversationId: string,
   actor: { id: string; role: Role },
@@ -169,54 +228,44 @@ export async function generateEvaluationFromConversation(
   if (evaluation.status === 'COMPLETED') {
     return {
       type: 'evaluation' as const,
-      evaluation: toEvaluationResultView(evaluation),
+      evaluation: toEvaluationResultView({
+        ...evaluation,
+        conversation: { id: conversation.id },
+      }),
       reply: 'La evaluación ya está completada y es inmutable.',
     };
   }
-
-  if (evaluation.readinessStatus !== 'READY') {
-    throw new AppError(
-      'La evaluación aún no está lista. Continúa la entrevista hasta que el estado sea Lista para evaluar.',
-      409,
-    );
-  }
-
-  const history: ChatMessage[] = conversation.messages.map((item) => ({
-    role: item.role === 'system' ? 'user' : item.role,
-    content: item.content,
-  }));
-  history.push({ role: 'user', content: GENERATE_PROMPT });
-
-  const context: ToolContext = {
-    evaluationId: evaluation.id,
-    initiativeId: evaluation.initiativeId,
-    userId: actor.id,
-  };
-
-  const agent = await runLabLensAgent(history, context);
 
   await createMessage({
     conversationId,
     role: MessageRole.user,
     content: 'Generar evaluación',
   });
+
+  const transcript = buildTranscript([
+    ...conversation.messages,
+    { role: 'user', content: 'Generar evaluación' },
+  ]);
+
+  const pipeline = await runEvaluationPipeline({
+    evaluationId: evaluation.id,
+    initiativeId: evaluation.initiativeId,
+    transcript,
+  });
+
   await createMessage({
     conversationId,
     role: MessageRole.assistant,
-    content: agent.message,
+    content: pipeline.report,
   });
-
-  if (!agent.artifacts.evaluationSaved) {
-    throw new AppError(
-      'El agente no persistió la evaluación. Intenta de nuevo.',
-      502,
-    );
-  }
 
   const refreshed = await getEvaluationOrThrow(evaluation.id);
   return {
     type: 'evaluation' as const,
-    reply: agent.message,
-    evaluation: toEvaluationResultView(refreshed),
+    reply: pipeline.report,
+    evaluation: toEvaluationResultView({
+      ...refreshed,
+      conversation: { id: conversation.id },
+    }),
   };
 }

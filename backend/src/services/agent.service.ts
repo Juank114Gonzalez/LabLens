@@ -1,6 +1,10 @@
 import type { Content, FunctionCall, Part } from '@google/genai';
 import { loadPrompt } from '../prompts/load-prompt.js';
-import { executeTool, getToolDeclarations } from '../tools/registry.js';
+import {
+  executeTool,
+  getToolDeclarations,
+  type AgentToolMode,
+} from '../tools/registry.js';
 import type { ChatMessage } from '../types/chat.types.js';
 import {
   createEmptyArtifacts,
@@ -10,7 +14,7 @@ import {
 import { AppError } from '../utils/AppError.js';
 import { generateWithTools, getResponseParts } from './gemini.service.js';
 
-const MAX_TOOL_ROUNDS = 10;
+const MAX_TOOL_ROUNDS = 8;
 
 export type AgentRunResult = {
   message: string;
@@ -33,15 +37,16 @@ function getFunctionCalls(parts: Part[]): FunctionCall[] {
 }
 
 /**
- * Runs a Gemini agent loop with LabLens tools.
- * Business rules live in tools/services; this layer only orchestrates reasoning.
+ * Modo Entrevista: Gemini solo conversa y consulta contexto.
+ * La evaluación corre en evaluation-pipeline.service (fuera de este loop).
  */
-export async function runLabLensAgent(
+export async function runInterviewAgent(
   history: ChatMessage[],
   context: ToolContext,
 ): Promise<AgentRunResult> {
+  const mode: AgentToolMode = 'interview';
   const systemInstruction = await loadPrompt('system.md');
-  const declarations = getToolDeclarations();
+  const declarations = getToolDeclarations(mode);
   const contents: Content[] = toContents(history);
   const artifacts = createEmptyArtifacts();
 
@@ -64,17 +69,12 @@ export async function runLabLensAgent(
       if (!message) {
         throw new AppError('Gemini returned an empty agent response', 502);
       }
-
       return { message, artifacts };
     }
 
-    contents.push({
-      role: 'model',
-      parts,
-    });
+    contents.push({ role: 'model', parts });
 
     const functionResponseParts: Part[] = [];
-
     for (const call of functionCalls) {
       const args = (call.args ?? {}) as Record<string, unknown>;
       try {
@@ -104,11 +104,11 @@ export async function runLabLensAgent(
       }
     }
 
-    contents.push({
-      role: 'user',
-      parts: functionResponseParts,
-    });
+    contents.push({ role: 'user', parts: functionResponseParts });
   }
 
-  throw new AppError('Agent exceeded maximum tool rounds', 502);
+  throw new AppError('Interview agent exceeded maximum tool rounds', 502);
 }
+
+/** @deprecated Use runInterviewAgent — evaluation is no longer agent-driven. */
+export const runLabLensAgent = runInterviewAgent;

@@ -17,6 +17,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import {
   createInitiativeSchema,
   initiativeIdParamsSchema,
+  startEvaluationBodySchema,
   updateInitiativeSchema,
 } from '../validators/initiative.validator.js';
 
@@ -64,6 +65,7 @@ initiativeRouter.post(
   '/:id/evaluations',
   authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(initiativeIdParamsSchema, 'params'),
+  validateRequest(startEvaluationBodySchema),
   asyncHandler(startEvaluationController),
 );
 

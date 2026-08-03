@@ -6,36 +6,38 @@ import type {
   ToolName,
 } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { findSimilarInitiativesTool, searchSimilarInitiativesTool } from './find-similar-initiatives/index.js';
-import { generateBusinessCaseTool } from './generate-business-case/index.js';
-import { getClassificationsTool, getWorkTablesTool } from './get-catalogs/index.js';
+import {
+  findSimilarInitiativesTool,
+  searchSimilarInitiativesTool,
+} from './find-similar-initiatives/index.js';
 import { getEvaluationCriteriaTool } from './get-evaluation-criteria/index.js';
 import { getInitiativeTool } from './get-initiative/index.js';
 import { getPreviousEvaluationsTool } from './get-previous-evaluations/index.js';
-import { saveEvaluationTool } from './save-evaluation/index.js';
 import { searchKnowledgeTool } from './search-knowledge/index.js';
 import { updateReadinessTool } from './update-readiness/index.js';
 
-const tools: ToolDefinition[] = [
+export type AgentToolMode = 'interview';
+
+/** Tools available in Modo Entrevista — never scoring or persistence. */
+const interviewTools: ToolDefinition[] = [
   searchKnowledgeTool,
   searchSimilarInitiativesTool,
   findSimilarInitiativesTool,
   getInitiativeTool,
   getEvaluationCriteriaTool,
   getPreviousEvaluationsTool,
-  getClassificationsTool,
-  getWorkTablesTool,
   updateReadinessTool,
-  generateBusinessCaseTool,
-  saveEvaluationTool,
 ];
 
 const toolsByName = new Map<ToolName, ToolDefinition>(
-  tools.map((tool) => [tool.name, tool]),
+  interviewTools.map((tool) => [tool.name, tool]),
 );
 
-export function getToolDeclarations(): FunctionDeclaration[] {
-  return tools.map((tool) => tool.declaration);
+export function getToolDeclarations(mode: AgentToolMode = 'interview'): FunctionDeclaration[] {
+  if (mode === 'interview') {
+    return interviewTools.map((tool) => tool.declaration);
+  }
+  return [];
 }
 
 export async function executeTool(
@@ -47,7 +49,10 @@ export async function executeTool(
   const tool = toolsByName.get(name as ToolName);
 
   if (!tool) {
-    throw new AppError(`Unknown tool: ${name}`, 500);
+    throw new AppError(
+      `Tool no disponible en modo entrevista: ${name}. La evaluación corre en el pipeline de backend.`,
+      400,
+    );
   }
 
   const result = await tool.execute(args ?? {}, context);
@@ -73,17 +78,5 @@ function captureArtifacts(
   if (name === 'updateReadiness' && result && typeof result === 'object') {
     const payload = result as { readiness?: ToolArtifacts['readiness'] };
     artifacts.readiness = payload.readiness ?? null;
-    return;
-  }
-
-  if (name === 'generateBusinessCase' && result && typeof result === 'object') {
-    artifacts.businessCase = result as ToolArtifacts['businessCase'];
-    return;
-  }
-
-  if (name === 'saveEvaluation' && result && typeof result === 'object') {
-    artifacts.evaluationSaved = Boolean(
-      (result as { saved?: boolean }).saved,
-    );
   }
 }

@@ -1,37 +1,18 @@
 import { Type } from '@google/genai';
-import {
-  ConversationStatus,
-  EvaluationStatus,
-  InitiativeStatus,
-  Prisma,
-} from '@prisma/client';
 import { z } from 'zod';
-import { listClassifications } from '../../repositories/classification.repository.js';
-import { listCriteria } from '../../repositories/criteria.repository.js';
-import { updateConversation } from '../../repositories/conversation.repository.js';
-import {
-  getEvaluationOrThrow,
-  updateEvaluation,
-} from '../../repositories/evaluation.repository.js';
-import { updateInitiative } from '../../repositories/domain-initiative.repository.js';
-import { listWorkTables } from '../../repositories/work-table.repository.js';
-import {
-  computeWeightedFit,
-  type BusinessCase,
-  type CriterionScore,
-  type EvaluationResultsPayload,
-} from '../../types/evaluation-domain.types.js';
+import { persistEvaluationResult } from '../../services/evaluation-persistence.service.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
-import { AppError } from '../../utils/AppError.js';
 
 const saveSchema = z.object({
-  criteriaScores: z.array(
-    z.object({
-      criteriaId: z.string().uuid(),
-      score: z.number().min(0).max(100),
-      justification: z.string().min(1),
-    }),
-  ).min(1),
+  criteriaScores: z
+    .array(
+      z.object({
+        criteriaId: z.string().uuid(),
+        score: z.number().min(0).max(100),
+        justification: z.string().min(1),
+      }),
+    )
+    .min(1),
   classificationId: z.string().uuid(),
   classificationJustification: z.string().min(1),
   workTableId: z.string().uuid(),
@@ -49,12 +30,13 @@ const saveSchema = z.object({
   recommendations: z.array(z.string()).optional(),
 });
 
+/** Kept for tooling compatibility; Modo Evaluación usa el pipeline de servicio. */
 export const saveEvaluationTool: ToolDefinition = {
   name: 'saveEvaluation',
   declaration: {
     name: 'saveEvaluation',
     description:
-      'Persiste la evaluación final. El Fit se calcula en backend con los pesos activos. No inventes IDs: usa getEvaluationCriteria y catálogos reales.',
+      'Persiste la evaluación final. El Fit se calcula en backend. Preferir el pipeline de evaluación.',
     parameters: {
       type: Type.OBJECT,
       properties: {
@@ -114,96 +96,18 @@ export const saveEvaluationTool: ToolDefinition = {
   },
   execute: async (args, context) => {
     const input = saveSchema.parse(args);
-    const evaluation = await getEvaluationOrThrow(context.evaluationId);
-
-    if (evaluation.status === EvaluationStatus.COMPLETED) {
-      throw new AppError('Evaluation already completed and immutable', 409);
-    }
-
-    const activeCriteria = (await listCriteria()).filter((item) => item.activo);
-    const classifications = await listClassifications();
-    const workTables = await listWorkTables();
-
-    const classification = classifications.find((item) => item.id === input.classificationId && item.activo);
-    const workTable = workTables.find((item) => item.id === input.workTableId && item.activo);
-
-    if (!classification) {
-      throw new AppError('Invalid classificationId', 400);
-    }
-    if (!workTable) {
-      throw new AppError('Invalid workTableId', 400);
-    }
-
-    const criteriaScores: CriterionScore[] = input.criteriaScores.map((score) => {
-      const criterion = activeCriteria.find((item) => item.id === score.criteriaId);
-      if (!criterion) {
-        throw new AppError(`Unknown or inactive criteriaId: ${score.criteriaId}`, 400);
-      }
-      return {
-        criteriaId: criterion.id,
-        nombre: criterion.nombre,
-        peso: criterion.peso,
-        score: score.score,
-        justification: score.justification,
-      };
+    const saved = await persistEvaluationResult({
+      evaluationId: context.evaluationId,
+      initiativeId: context.initiativeId,
+      ...input,
     });
-
-    if (criteriaScores.length !== activeCriteria.length) {
-      throw new AppError('Debes puntuar todos los criterios activos', 400);
-    }
-
-    const fit = computeWeightedFit(criteriaScores);
-    const businessCase = input.businessCase as BusinessCase;
-
-    const results: EvaluationResultsPayload = {
-      fit,
-      criteriaScores,
-      priority: input.priority,
-      priorityJustification: input.priorityJustification,
-      classificationJustification: input.classificationJustification,
-      workTableJustification: input.workTableJustification,
-    };
-
-    const weightsSnapshot = Object.fromEntries(
-      criteriaScores.map((item) => [item.criteriaId, item.peso]),
-    );
-
-    await updateEvaluation(context.evaluationId, {
-      status: EvaluationStatus.COMPLETED,
-      results: results as unknown as Prisma.InputJsonValue,
-      criteriaSnapshot: activeCriteria as unknown as Prisma.InputJsonValue,
-      weightsSnapshot: weightsSnapshot as unknown as Prisma.InputJsonValue,
-      classificationSnapshot: classification as unknown as Prisma.InputJsonValue,
-      workTableSnapshot: workTable as unknown as Prisma.InputJsonValue,
-      classification: { connect: { id: classification.id } },
-      workTable: { connect: { id: workTable.id } },
-      businessCase: JSON.stringify(businessCase),
-      recommendations: (input.recommendations ?? [
-        businessCase.recomendacionFinal,
-      ]) as unknown as Prisma.InputJsonValue,
-      priority: input.priority,
-      evaluatedAt: new Date(),
-      configVersion: evaluation.configVersion ?? new Date().toISOString(),
-    });
-
-    if (evaluation.conversation) {
-      await updateConversation(evaluation.conversation.id, {
-        status: ConversationStatus.COMPLETED,
-        completion: 100,
-      });
-    }
-
-    await updateInitiative(context.initiativeId, {
-      status: InitiativeStatus.EVALUATED,
-    });
-
     return {
       saved: true,
-      evaluationId: context.evaluationId,
-      fit,
-      priority: input.priority,
-      classification: classification.nombre,
-      workTable: workTable.nombre,
+      evaluationId: saved.evaluationId,
+      fit: saved.fit,
+      priority: saved.priority,
+      classification: saved.classification.nombre,
+      workTable: saved.workTable.nombre,
     };
   },
 };
