@@ -82,6 +82,10 @@ export async function loginUser(
     throw new AppError('Invalid credentials', 401);
   }
 
+  if (!user.isActive) {
+    throw new AppError('User account is inactive', 403);
+  }
+
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) {
     throw new AppError('Invalid credentials', 401);

@@ -4,6 +4,7 @@ import {
   deleteUserController,
   getUserController,
   listUsersController,
+  resetPasswordController,
   updateUserController,
   updateUserRoleController,
 } from '../controllers/user-admin.controller.js';
@@ -41,6 +42,12 @@ userAdminRouter.patch(
   validateRequest(userIdParamsSchema, 'params'),
   validateRequest(updateUserAdminSchema),
   asyncHandler(updateUserController),
+);
+
+userAdminRouter.post(
+  '/:id/reset-password',
+  validateRequest(userIdParamsSchema, 'params'),
+  asyncHandler(resetPasswordController),
 );
 
 userAdminRouter.delete(

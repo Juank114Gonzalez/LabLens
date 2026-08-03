@@ -4,7 +4,10 @@ import {
   createInitiativeController,
   deleteInitiativeController,
   getInitiativeController,
+  listInitiativeEvaluationsController,
   listInitiativesController,
+  registerInitiativeController,
+  startEvaluationController,
   updateInitiativeController,
 } from '../controllers/initiative.controller.js';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
@@ -38,10 +41,30 @@ initiativeRouter.get(
 
 initiativeRouter.patch(
   '/:id',
-  authorize(Role.GENERATOR, Role.EVALUATOR, Role.ADMIN),
+  authorize(Role.GENERATOR, Role.ADMIN),
   validateRequest(initiativeIdParamsSchema, 'params'),
   validateRequest(updateInitiativeSchema),
   asyncHandler(updateInitiativeController),
+);
+
+initiativeRouter.post(
+  '/:id/register',
+  authorize(Role.GENERATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(registerInitiativeController),
+);
+
+initiativeRouter.get(
+  '/:id/evaluations',
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(listInitiativeEvaluationsController),
+);
+
+initiativeRouter.post(
+  '/:id/evaluations',
+  authorize(Role.EVALUATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(startEvaluationController),
 );
 
 initiativeRouter.delete(

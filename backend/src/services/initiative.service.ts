@@ -4,28 +4,40 @@ import {
   deleteInitiative,
   getInitiativeOrThrow,
   listInitiatives,
+  replaceCompanyContacts,
   updateInitiative,
 } from '../repositories/domain-initiative.repository.js';
 import type {
   CreateInitiativeDto,
+  RegisterInitiativeDto,
   UpdateInitiativeDto,
 } from '../validators/initiative.validator.js';
+import { registerInitiativeSchema } from '../validators/initiative.validator.js';
 import { AppError } from '../utils/AppError.js';
 
 function canViewAll(role: Role) {
   return role === Role.ADMIN || role === Role.EVALUATOR;
 }
 
-export async function createInitiativeForUser(
+function assertDraftEditable(status: InitiativeStatus) {
+  if (status !== InitiativeStatus.DRAFT) {
+    throw new AppError('Solo las iniciativas en borrador pueden editarse', 409);
+  }
+}
+
+export async function createDraftInitiative(
   userId: string,
-  input: CreateInitiativeDto,
+  userName: string,
+  input: CreateInitiativeDto = {},
 ) {
   const { companyContacts, ...fields } = input;
   return createInitiative({
     userId,
     data: {
       ...fields,
-      status: fields.status ?? InitiativeStatus.REGISTERED,
+      diligenciadoPor: fields.diligenciadoPor?.trim() || userName,
+      fechaDiligenciamiento: fields.fechaDiligenciamiento ?? new Date(),
+      status: InitiativeStatus.DRAFT,
     },
     companyContacts,
   });
@@ -58,7 +70,7 @@ export async function updateInitiativeForActor(
 ) {
   const existing = await getInitiativeOrThrow(id, {
     userId: actor.id,
-    isAdmin: actor.role === Role.ADMIN || actor.role === Role.EVALUATOR,
+    isAdmin: actor.role === Role.ADMIN,
   });
 
   if (actor.role === Role.GENERATOR && existing.userId !== actor.id) {
@@ -66,15 +78,80 @@ export async function updateInitiativeForActor(
   }
 
   if (actor.role === Role.EVALUATOR) {
-    const keys = Object.keys(input).filter((key) => input[key as keyof UpdateInitiativeDto] !== undefined);
-    if (keys.some((key) => key !== 'status')) {
-      throw new AppError('Evaluators can only update initiative status', 403);
-    }
+    throw new AppError('Forbidden', 403);
   }
 
-  const { companyContacts: _contacts, ...fields } = input;
+  assertDraftEditable(existing.status);
 
-  return updateInitiative(id, fields);
+  const { companyContacts, status: _status, ...fields } = input;
+
+  if (companyContacts) {
+    await replaceCompanyContacts(id, companyContacts);
+  }
+
+  return updateInitiative(id, {
+    ...fields,
+    status: InitiativeStatus.DRAFT,
+  });
+}
+
+export async function registerInitiativeForActor(
+  id: string,
+  actor: { id: string; role: Role },
+  input?: RegisterInitiativeDto,
+) {
+  const existing = await getInitiativeOrThrow(id, {
+    userId: actor.id,
+    isAdmin: actor.role === Role.ADMIN,
+  });
+
+  if (actor.role === Role.GENERATOR && existing.userId !== actor.id) {
+    throw new AppError('Initiative not found', 404);
+  }
+
+  assertDraftEditable(existing.status);
+
+  const fromExisting = {
+    diligenciadoPor: existing.diligenciadoPor,
+    fechaDiligenciamiento: existing.fechaDiligenciamiento,
+    expectativaSolucion: existing.expectativaSolucion,
+    nombre: existing.nombre,
+    areaProcesoImpactado: existing.areaProcesoImpactado,
+    areaInvolucrada: existing.areaInvolucrada,
+    urgencia: existing.urgencia,
+    impacto: existing.impacto,
+    necesidad: existing.necesidad,
+    porQueAhora: existing.porQueAhora,
+    paraQue: existing.paraQue,
+    comoSeResuelveHoy: existing.comoSeResuelveHoy,
+    companyContacts: existing.companyContacts.map((c) => ({
+      empresa: c.empresa,
+      contacto: c.contacto,
+      cargo: c.cargo,
+      correo: c.correo,
+      telefono: c.telefono,
+    })),
+  };
+
+  const hasMeaningfulBody =
+    Boolean(input) && Object.values(input!).some((value) => value !== undefined);
+
+  const parsed = registerInitiativeSchema.parse(
+    hasMeaningfulBody ? { ...fromExisting, ...input } : fromExisting,
+  );
+
+  if (existing.attachments.length === 0) {
+    throw new AppError('Debe adjuntar al menos una evidencia', 400);
+  }
+
+  await replaceCompanyContacts(id, parsed.companyContacts);
+
+  const { companyContacts: _contacts, ...fields } = parsed;
+
+  return updateInitiative(id, {
+    ...fields,
+    status: InitiativeStatus.REGISTERED,
+  });
 }
 
 export async function deleteInitiativeForActor(
@@ -90,5 +167,17 @@ export async function deleteInitiativeForActor(
     throw new AppError('Initiative not found', 404);
   }
 
+  if (actor.role === Role.GENERATOR && existing.status !== InitiativeStatus.DRAFT) {
+    throw new AppError('Solo se pueden eliminar borradores', 409);
+  }
+
   await deleteInitiative(id);
+}
+
+/** Stub for next increment: start evaluation + conversation. */
+export async function startEvaluationStub() {
+  throw new AppError(
+    'El flujo de evaluación se implementará en el siguiente incremento',
+    501,
+  );
 }

@@ -4,6 +4,7 @@ import {
   deleteUserAdmin,
   getUserAdmin,
   listUsersAdmin,
+  requestPasswordResetPlaceholder,
   updateUserAdmin,
 } from '../services/user-admin.service.js';
 import { AppError } from '../utils/AppError.js';
@@ -49,4 +50,9 @@ export async function deleteUserController(req: Request, res: Response) {
   const { id } = req.params as UserIdParamsDto;
   await deleteUserAdmin(id, actor.id);
   sendSuccess(res, { ok: true });
+}
+
+export async function resetPasswordController(req: Request, res: Response) {
+  const { id } = req.params as UserIdParamsDto;
+  sendSuccess(res, await requestPasswordResetPlaceholder(id));
 }

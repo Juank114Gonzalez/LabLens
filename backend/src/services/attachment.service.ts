@@ -1,4 +1,11 @@
-import { Role } from '@prisma/client';
+import { InitiativeStatus, Role } from '@prisma/client';
+import { createRequire } from 'node:module';
+import { PassThrough } from 'node:stream';
+
+const require = createRequire(import.meta.url);
+// archiver ships CJS; cast keeps NodeNext + strict TS happy
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const archiver = require('archiver') as any;
 import {
   createAttachment,
   deleteAttachment,
@@ -31,6 +38,9 @@ export async function uploadAttachmentForInitiative(
   if (actor.role === Role.GENERATOR && initiative.userId !== actor.id) {
     throw new AppError('Initiative not found', 404);
   }
+  if (initiative.status !== InitiativeStatus.DRAFT) {
+    throw new AppError('Solo se pueden adjuntar evidencias en borrador', 409);
+  }
 
   const uploaded = await uploadAttachmentBuffer({
     buffer: file.buffer,
@@ -58,7 +68,43 @@ export async function deleteAttachmentForActor(
   actor: { id: string; role: Role },
 ) {
   const attachment = await getAttachmentOrThrow(id);
-  await assertInitiativeAccess(attachment.initiativeId, actor);
+  const initiative = await assertInitiativeAccess(attachment.initiativeId, actor);
+  if (initiative.status !== InitiativeStatus.DRAFT) {
+    throw new AppError('Solo se pueden eliminar evidencias en borrador', 409);
+  }
   await deleteCloudinaryAsset(attachment.publicId);
   await deleteAttachment(id);
+}
+
+export async function downloadAttachmentsZip(
+  initiativeId: string,
+  actor: { id: string; role: Role },
+): Promise<{ stream: PassThrough; filename: string }> {
+  const initiative = await assertInitiativeAccess(initiativeId, actor);
+  const attachments = await listAttachmentsByInitiative(initiativeId);
+
+  if (attachments.length === 0) {
+    throw new AppError('No hay evidencias para descargar', 404);
+  }
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  const stream = new PassThrough();
+  archive.pipe(stream);
+
+  for (const item of attachments) {
+    const response = await fetch(item.secureUrl);
+    if (!response.ok || !response.body) {
+      continue;
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    archive.append(buffer, { name: item.originalName });
+  }
+
+  void archive.finalize();
+
+  const safeName = (initiative.nombre || 'iniciativa').replace(/[^\w\-]+/g, '_');
+  return {
+    stream,
+    filename: `evidencias-${safeName}.zip`,
+  };
 }

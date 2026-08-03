@@ -5,11 +5,22 @@ import { AppError } from '../utils/AppError.js';
 const initiativeInclude = {
   companyContacts: true,
   attachments: true,
+  user: {
+    select: { id: true, name: true, email: true },
+  },
+  evaluations: {
+    orderBy: { createdAt: 'desc' as const },
+    include: {
+      evaluator: { select: { id: true, name: true, email: true } },
+      classification: { select: { id: true, nombre: true } },
+      workTable: { select: { id: true, nombre: true } },
+    },
+  },
 } satisfies Prisma.InitiativeInclude;
 
 export async function createInitiative(input: {
   userId: string;
-  data: Prisma.InitiativeCreateWithoutUserInput;
+  data?: Prisma.InitiativeCreateWithoutUserInput;
   companyContacts?: Array<{
     empresa: string;
     contacto: string;
@@ -22,7 +33,7 @@ export async function createInitiative(input: {
     data: {
       ...input.data,
       userId: input.userId,
-      status: input.data.status ?? InitiativeStatus.REGISTERED,
+      status: input.data?.status ?? InitiativeStatus.DRAFT,
       companyContacts: input.companyContacts?.length
         ? { create: input.companyContacts }
         : undefined,
@@ -49,10 +60,13 @@ export async function findInitiativeById(id: string) {
   });
 }
 
-export async function getInitiativeOrThrow(id: string, options: {
-  userId?: string;
-  isAdmin: boolean;
-}) {
+export async function getInitiativeOrThrow(
+  id: string,
+  options: {
+    userId?: string;
+    isAdmin: boolean;
+  },
+) {
   const initiative = await findInitiativeById(id);
   if (!initiative) {
     throw new AppError('Initiative not found', 404);
@@ -72,6 +86,24 @@ export async function updateInitiative(
     data,
     include: initiativeInclude,
   });
+}
+
+export async function replaceCompanyContacts(
+  initiativeId: string,
+  contacts: Array<{
+    empresa: string;
+    contacto: string;
+    cargo: string;
+    correo: string;
+    telefono: string;
+  }>,
+) {
+  await prisma.$transaction([
+    prisma.companyContact.deleteMany({ where: { initiativeId } }),
+    prisma.companyContact.createMany({
+      data: contacts.map((contact) => ({ ...contact, initiativeId })),
+    }),
+  ]);
 }
 
 export async function deleteInitiative(id: string) {

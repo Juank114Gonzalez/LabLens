@@ -10,6 +10,7 @@ export const updateUserAdminSchema = z.object({
   email: z.string().trim().email().max(255).optional(),
   password: z.string().min(6).max(128).optional(),
   role: z.nativeEnum(Role).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const userIdParamsSchema = z.object({

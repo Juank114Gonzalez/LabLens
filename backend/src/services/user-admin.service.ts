@@ -11,6 +11,26 @@ import {
 import type { UpdateUserAdminDto } from '../validators/user-admin.validator.js';
 import { AppError } from '../utils/AppError.js';
 
+function toPublicUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
 export async function listUsersAdmin() {
   return listUsers();
 }
@@ -20,14 +40,7 @@ export async function getUserAdmin(id: string) {
   if (!user) {
     throw new AppError('User not found', 404);
   }
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
+  return toPublicUser(user);
 }
 
 export async function changeUserRole(id: string, role: Role, actorId: string) {
@@ -40,15 +53,7 @@ export async function changeUserRole(id: string, role: Role, actorId: string) {
     throw new AppError('Cannot demote your own admin role', 400);
   }
 
-  const updated = await updateUserRole(id, role);
-  return {
-    id: updated.id,
-    name: updated.name,
-    email: updated.email,
-    role: updated.role,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-  };
+  return toPublicUser(await updateUserRole(id, role));
 }
 
 export async function updateUserAdmin(
@@ -72,24 +77,35 @@ export async function updateUserAdmin(
     throw new AppError('Cannot demote your own admin role', 400);
   }
 
+  if (input.isActive === false && user.id === actorId) {
+    throw new AppError('Cannot deactivate your own account', 400);
+  }
+
   const passwordHash = input.password
     ? await bcrypt.hash(input.password, 10)
     : undefined;
 
-  const updated = await updateUser(id, {
-    name: input.name,
-    email: input.email,
-    role: input.role,
-    passwordHash,
-  });
+  return toPublicUser(
+    await updateUser(id, {
+      name: input.name,
+      email: input.email,
+      role: input.role,
+      isActive: input.isActive,
+      passwordHash,
+    }),
+  );
+}
 
+/** Placeholder for future email-based password reset. */
+export async function requestPasswordResetPlaceholder(id: string) {
+  const user = await findUserById(id);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
   return {
-    id: updated.id,
-    name: updated.name,
-    email: updated.email,
-    role: updated.role,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
+    ok: true,
+    message: 'Reset de contraseña pendiente de integración (placeholder)',
+    email: user.email,
   };
 }
 

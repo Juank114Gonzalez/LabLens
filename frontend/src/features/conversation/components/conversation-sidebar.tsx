@@ -1,18 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
+  ClipboardList,
+  FilePlus2,
   LayoutDashboard,
   LogOut,
-  MessageSquarePlus,
-  Search,
-  Settings,
+  MessageSquare,
+  Settings2,
+  Shield,
+  Table2,
+  Tags,
+  Users,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -25,55 +27,55 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { canAccessAdmin, canAccessChat } from '@/features/auth/lib/roles';
-import { ConversationItem } from '@/features/conversation/components/conversation-item';
-import { useConversations } from '@/features/conversation/hooks/use-conversations';
-import { Logo } from '@/shared/components/logo';
 import {
-  DATE_GROUP_LABELS,
-  groupDateLabel,
-  type DateGroup,
-} from '@/shared/lib/dates';
+  canAccessAdmin,
+  canAccessChat,
+  canAccessEvaluations,
+  canManageInitiatives,
+} from '@/features/auth/lib/roles';
+import { Logo } from '@/shared/components/logo';
 import { useUiStore } from '@/stores/ui.store';
+import { cn } from '@/lib/utils';
 
-const GROUP_ORDER: DateGroup[] = ['today', 'yesterday', 'week', 'older'];
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
 
 export function ConversationSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useAuth();
-  const canChat = Boolean(user && canAccessChat(user.role));
-  const showAdmin = Boolean(user && canAccessAdmin(user.role));
-  const { data: items = [], isLoading } = useConversations();
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
-  const [query, setQuery] = useState('');
+  const role = user?.role;
 
-  const grouped = useMemo(() => {
-    const filtered = items
-      .filter((item) => {
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          item.title.toLowerCase().includes(q) ||
-          item.preview.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
+  const items: NavItem[] = [];
 
-    return GROUP_ORDER.map((group) => ({
-      group,
-      items: filtered.filter((item) => groupDateLabel(item.updatedAt) === group),
-    })).filter((entry) => entry.items.length > 0);
-  }, [items, query]);
+  if (role) {
+    items.push({ href: routes.dashboard, label: 'Dashboard', icon: LayoutDashboard });
 
-  function handleRename(_id: string) {
-    toast.message('Renombrar conversaciones estará disponible pronto');
-  }
+    if (canManageInitiatives(role)) {
+      items.push(
+        { href: routes.initiatives, label: 'Mis iniciativas', icon: ClipboardList },
+        { href: routes.initiativeNew, label: 'Nueva iniciativa', icon: FilePlus2 },
+      );
+    }
 
-  function handleDelete(id: string) {
-    toast.message('Eliminar conversaciones estará disponible pronto');
-    if (pathname.includes(id)) {
-      router.push(routes.dashboard);
+    if (canAccessEvaluations(role)) {
+      items.push({ href: routes.evaluations, label: 'Evaluaciones', icon: MessageSquare });
+    }
+
+    if (canAccessChat(role) && role === 'EVALUATOR') {
+      items.push({ href: routes.chatNew, label: 'Chat LabLens', icon: MessageSquare });
+    }
+
+    if (canAccessAdmin(role)) {
+      items.push(
+        { href: routes.adminUsers, label: 'Usuarios', icon: Users },
+        { href: routes.adminCriteria, label: 'Criterios', icon: Settings2 },
+        { href: routes.adminClassifications, label: 'Clasificaciones', icon: Tags },
+        { href: routes.adminWorkTables, label: 'Mesas de trabajo', icon: Table2 },
+      );
     }
   }
 
@@ -93,100 +95,40 @@ export function ConversationSidebar() {
             ×
           </Button>
         </div>
-
-        {canChat ? (
-          <Button asChild className="w-full justify-start gap-2">
-            <Link href={routes.chatNew} onClick={() => setSidebarOpen(false)}>
-              <MessageSquarePlus className="size-4" />
-              Nueva conversación
-            </Link>
-          </Button>
-        ) : (
-          <p className="rounded-xl border border-dashed border-border/70 px-3 py-3 text-xs text-muted-foreground">
-            Como generador puedes registrar iniciativas. La evaluación con LabLens la
-            realiza un gestor.
+        {role === 'ADMIN' ? (
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Shield className="size-3.5" /> Panel de administración
           </p>
-        )}
-
-        {canChat ? (
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar conversaciones"
-              className="h-9 bg-background/50 pl-9"
-              aria-label="Buscar conversaciones"
-            />
-          </div>
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {!canChat ? (
-          <p className="px-3 py-6 text-sm text-muted-foreground">
-            El historial de evaluaciones estará disponible para gestores en el siguiente
-            incremento.
-          </p>
-        ) : isLoading ? (
-          <p className="px-3 py-6 text-sm text-muted-foreground">Cargando conversaciones…</p>
-        ) : grouped.length === 0 ? (
-          <p className="px-3 py-6 text-sm text-muted-foreground">
-            Aún no hay conversaciones de evaluación.
-          </p>
-        ) : (
-          grouped.map((section) => (
-            <section key={section.group} className="mb-4">
-              <h2 className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                {DATE_GROUP_LABELS[section.group]}
-              </h2>
-              <div className="space-y-1">
-                {section.items.map((item) => (
-                  <ConversationItem
-                    key={item.id}
-                    item={item}
-                    active={pathname.includes(item.id)}
-                    onRename={handleRename}
-                    onDelete={handleDelete}
-                    onToggleFavorite={() =>
-                      toast.message('Favoritos estará disponible pronto')
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-      </div>
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+        {items.map((item) => {
+          const active =
+            pathname === item.href ||
+            (item.href !== routes.dashboard && pathname.startsWith(item.href));
+          return (
+            <Button
+              key={item.href}
+              asChild
+              variant="ghost"
+              className={cn(
+                'w-full justify-start gap-2',
+                active && 'bg-sidebar-accent text-sidebar-accent-foreground',
+              )}
+            >
+              <Link href={item.href} onClick={() => setSidebarOpen(false)}>
+                <item.icon className="size-4" />
+                {item.label}
+              </Link>
+            </Button>
+          );
+        })}
+      </nav>
 
       <Separator />
 
-      <div className="space-y-1 p-3">
-        <Button asChild variant="ghost" className="w-full justify-start">
-          <Link href={routes.dashboard}>
-            <LayoutDashboard className="size-4" />
-            Dashboard
-          </Link>
-        </Button>
-        {showAdmin ? (
-          <Button asChild variant="ghost" className="w-full justify-start">
-            <Link href={routes.admin}>
-              <Settings className="size-4" />
-              Administración
-            </Link>
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => toast.message('Configuración disponible en una próxima iteración')}
-          >
-            <Settings className="size-4" />
-            Configuración
-          </Button>
-        )}
-
+      <div className="p-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -207,7 +149,7 @@ export function ConversationSidebar() {
               <span className="min-w-0 flex-1 text-left">
                 <span className="block truncate text-sm font-medium">{user?.name}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {user?.email}
+                  {user?.role}
                 </span>
               </span>
             </Button>

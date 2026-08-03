@@ -5,6 +5,7 @@ import {
   deleteCriteriaController,
   getCriteriaController,
   listCriteriaController,
+  reorderCriteriaController,
   updateCriteriaController,
 } from '../controllers/criteria.controller.js';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
@@ -14,6 +15,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import {
   createCriteriaSchema,
   criteriaIdParamsSchema,
+  reorderCriteriaSchema,
   updateCriteriaSchema,
 } from '../validators/criteria.validator.js';
 
@@ -22,6 +24,13 @@ const criteriaRouter = Router();
 criteriaRouter.use(authenticate);
 
 criteriaRouter.get('/', asyncHandler(listCriteriaController));
+
+criteriaRouter.put(
+  '/reorder',
+  authorize(Role.ADMIN),
+  validateRequest(reorderCriteriaSchema),
+  asyncHandler(reorderCriteriaController),
+);
 
 criteriaRouter.get(
   '/:id',

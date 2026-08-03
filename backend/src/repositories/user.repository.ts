@@ -33,6 +33,7 @@ export async function listUsers() {
       name: true,
       email: true,
       role: true,
+      isActive: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -48,7 +49,13 @@ export async function updateUserRole(id: string, role: Role): Promise<User> {
 
 export async function updateUser(
   id: string,
-  data: { name?: string; email?: string; passwordHash?: string; role?: Role },
+  data: {
+    name?: string;
+    email?: string;
+    passwordHash?: string;
+    role?: Role;
+    isActive?: boolean;
+  },
 ): Promise<User> {
   return prisma.user.update({
     where: { id },
@@ -57,6 +64,7 @@ export async function updateUser(
       ...(data.email !== undefined ? { email: data.email.toLowerCase() } : {}),
       ...(data.passwordHash !== undefined ? { passwordHash: data.passwordHash } : {}),
       ...(data.role !== undefined ? { role: data.role } : {}),
+      ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
     },
   });
 }

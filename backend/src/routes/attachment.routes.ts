@@ -3,6 +3,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import {
   deleteAttachmentController,
+  downloadAttachmentsController,
   listAttachmentsController,
   uploadAttachmentController,
 } from '../controllers/attachment.controller.js';
@@ -20,6 +21,8 @@ const attachmentRouter = Router();
 attachmentRouter.use(authenticate);
 
 attachmentRouter.get('/', asyncHandler(listAttachmentsController));
+
+attachmentRouter.get('/download', asyncHandler(downloadAttachmentsController));
 
 attachmentRouter.post(
   '/',

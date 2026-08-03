@@ -1,9 +1,11 @@
 import type { Request, Response } from 'express';
 import {
-  createInitiativeForUser,
+  createDraftInitiative,
   deleteInitiativeForActor,
   getInitiativeForActor,
   listInitiativesForActor,
+  registerInitiativeForActor,
+  startEvaluationStub,
   updateInitiativeForActor,
 } from '../services/initiative.service.js';
 import { AppError } from '../utils/AppError.js';
@@ -11,6 +13,7 @@ import { sendSuccess } from '../utils/response.js';
 import type {
   CreateInitiativeDto,
   InitiativeIdParamsDto,
+  RegisterInitiativeDto,
   UpdateInitiativeDto,
 } from '../validators/initiative.validator.js';
 
@@ -23,30 +26,34 @@ function requireUser(req: Request) {
 
 export async function listInitiativesController(req: Request, res: Response) {
   const user = requireUser(req);
-  const data = await listInitiativesForActor(user);
-  sendSuccess(res, data);
+  sendSuccess(res, await listInitiativesForActor(user));
 }
 
 export async function createInitiativeController(req: Request, res: Response) {
   const user = requireUser(req);
-  const body = req.body as CreateInitiativeDto;
-  const data = await createInitiativeForUser(user.id, body);
+  const body = (req.body ?? {}) as CreateInitiativeDto;
+  const data = await createDraftInitiative(user.id, user.name, body);
   sendSuccess(res, data, 201);
 }
 
 export async function getInitiativeController(req: Request, res: Response) {
   const user = requireUser(req);
   const { id } = req.params as InitiativeIdParamsDto;
-  const data = await getInitiativeForActor(id, user);
-  sendSuccess(res, data);
+  sendSuccess(res, await getInitiativeForActor(id, user));
 }
 
 export async function updateInitiativeController(req: Request, res: Response) {
   const user = requireUser(req);
   const { id } = req.params as InitiativeIdParamsDto;
   const body = req.body as UpdateInitiativeDto;
-  const data = await updateInitiativeForActor(id, user, body);
-  sendSuccess(res, data);
+  sendSuccess(res, await updateInitiativeForActor(id, user, body));
+}
+
+export async function registerInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  const body = req.body as RegisterInitiativeDto | undefined;
+  sendSuccess(res, await registerInitiativeForActor(id, user, body));
 }
 
 export async function deleteInitiativeController(req: Request, res: Response) {
@@ -54,4 +61,15 @@ export async function deleteInitiativeController(req: Request, res: Response) {
   const { id } = req.params as InitiativeIdParamsDto;
   await deleteInitiativeForActor(id, user);
   sendSuccess(res, { ok: true });
+}
+
+export async function listInitiativeEvaluationsController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  const initiative = await getInitiativeForActor(id, user);
+  sendSuccess(res, initiative.evaluations);
+}
+
+export async function startEvaluationController(_req: Request, _res: Response) {
+  await startEvaluationStub();
 }

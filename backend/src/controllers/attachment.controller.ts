@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import {
   deleteAttachmentForActor,
+  downloadAttachmentsZip,
   listAttachmentsForInitiative,
   uploadAttachmentForInitiative,
 } from '../services/attachment.service.js';
@@ -30,6 +31,15 @@ export async function listAttachmentsController(req: Request, res: Response) {
   const initiativeId = z.string().uuid().parse(req.query.initiativeId);
   const data = await listAttachmentsForInitiative(initiativeId, user);
   sendSuccess(res, data);
+}
+
+export async function downloadAttachmentsController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const initiativeId = z.string().uuid().parse(req.query.initiativeId);
+  const { stream, filename } = await downloadAttachmentsZip(initiativeId, user);
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  stream.pipe(res);
 }
 
 export async function deleteAttachmentController(req: Request, res: Response) {

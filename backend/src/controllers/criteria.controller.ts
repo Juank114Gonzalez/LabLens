@@ -4,12 +4,14 @@ import {
   deleteEvaluationCriteria,
   getEvaluationCriteria,
   listEvaluationCriteria,
+  reorderEvaluationCriteria,
   updateEvaluationCriteria,
 } from '../services/criteria.service.js';
 import { sendSuccess } from '../utils/response.js';
 import type {
   CreateCriteriaDto,
   CriteriaIdParamsDto,
+  ReorderCriteriaDto,
   UpdateCriteriaDto,
 } from '../validators/criteria.validator.js';
 
@@ -31,6 +33,11 @@ export async function updateCriteriaController(req: Request, res: Response) {
   const { id } = req.params as CriteriaIdParamsDto;
   const body = req.body as UpdateCriteriaDto;
   sendSuccess(res, await updateEvaluationCriteria(id, body));
+}
+
+export async function reorderCriteriaController(req: Request, res: Response) {
+  const body = req.body as ReorderCriteriaDto;
+  sendSuccess(res, await reorderEvaluationCriteria(body.items));
 }
 
 export async function deleteCriteriaController(req: Request, res: Response) {

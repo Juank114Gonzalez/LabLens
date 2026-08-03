@@ -48,6 +48,7 @@ model User {
   email         String         @unique
   passwordHash  String
   role          Role           @default(GENERATOR)
+  isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   initiatives   Initiative[]
@@ -71,19 +72,19 @@ model RefreshToken {
 model Initiative {
   id                   String           @id @default(uuid()) @db.Uuid
   userId               String           @db.Uuid
-  status               InitiativeStatus @default(REGISTERED)
-  diligenciadoPor      String
-  fechaDiligenciamiento DateTime
-  expectativaSolucion  String
-  nombre               String
-  areaProcesoImpactado String
-  areaInvolucrada      String
-  urgencia             String
-  impacto              String
-  necesidad            String
-  porQueAhora          String
-  paraQue              String
-  comoSeResuelveHoy    String
+  status                InitiativeStatus @default(DRAFT)
+  diligenciadoPor       String           @default("")
+  fechaDiligenciamiento DateTime         @default(now())
+  expectativaSolucion   String           @default("")
+  nombre                String           @default("")
+  areaProcesoImpactado  String           @default("")
+  areaInvolucrada       String           @default("")
+  urgencia              String           @default("")
+  impacto               String           @default("")
+  necesidad             String           @default("")
+  porQueAhora           String           @default("")
+  paraQue               String           @default("")
+  comoSeResuelveHoy     String           @default("")
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
   user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
