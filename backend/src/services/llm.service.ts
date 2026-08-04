@@ -7,8 +7,31 @@ export const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 /**
  * Caps thinking plus response text together. The prompts here ask for compact
  * JSON, so the budget exists mostly to leave the model room to reason.
+ * Safe on every supported model — Haiku 4.5 has the lowest ceiling at 64K.
  */
 export const MAX_TOKENS = 16000;
+
+/**
+ * Adaptive thinking arrived with the 4.6 generation. Older models — including
+ * Haiku 4.5, the cheap default — reject the parameter with a 400, so it is only
+ * sent when the configured model actually supports it. Prefix match so dated
+ * ids (`claude-haiku-4-5-20251001`) are covered too.
+ */
+const MODELS_WITHOUT_ADAPTIVE_THINKING = [
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5',
+  'claude-opus-4-5',
+  'claude-opus-4-1',
+  'claude-opus-4-0',
+  'claude-sonnet-4-0',
+];
+
+export function thinkingConfig(): { type: 'adaptive' } | undefined {
+  const legacy = MODELS_WITHOUT_ADAPTIVE_THINKING.some((id) =>
+    env.ANTHROPIC_MODEL.startsWith(id),
+  );
+  return legacy ? undefined : { type: 'adaptive' };
+}
 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Anthropic.APIError) {
@@ -51,7 +74,7 @@ export async function generatePlainText(prompt: string): Promise<string> {
     const response = await anthropic.messages.create({
       model: env.ANTHROPIC_MODEL,
       max_tokens: MAX_TOKENS,
-      thinking: { type: 'adaptive' },
+      thinking: thinkingConfig(),
       messages: [{ role: 'user', content: prompt }],
     });
 

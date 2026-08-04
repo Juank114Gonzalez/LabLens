@@ -43,7 +43,7 @@ Cada carpeta tiene su propio `README` con detalle de arquitectura, scripts y var
 ### Backend
 
 - Node.js · Express · TypeScript · pnpm
-- Anthropic Claude (`@anthropic-ai/sdk`) con **tool use** y thinking adaptativo
+- Anthropic Claude (`@anthropic-ai/sdk`) con **tool use** — por defecto Haiku 4.5 por costo
 - PostgreSQL (Neon) · Prisma
 - Zod · dotenv
 
