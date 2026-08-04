@@ -37,11 +37,12 @@ export async function submitPublicInitiative(
   const isJson = contentType.includes('application/json');
   const result = (isJson ? await response.json() : null) as ApiResponse<PublicSubmissionResult> | null;
 
-  if (!response.ok || !result?.success) {
-    throw new ApiClientError(
-      result?.message ?? `Request failed with status ${response.status}`,
-      response.status,
-    );
+  if (!response.ok || !result || !result.success) {
+    const message =
+      result && !result.success
+        ? result.message
+        : `Request failed with status ${response.status}`;
+    throw new ApiClientError(message, response.status);
   }
 
   return result.data;
