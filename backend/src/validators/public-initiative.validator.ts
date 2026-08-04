@@ -25,7 +25,7 @@ export const publicInitiativeSchema = z
     areaProcesoImpactado: requiredText(255),
     areaInvolucrada: requiredText(255),
     urgencia: requiredText(100),
-    impacto: requiredText(100),
+    impacto: requiredText(500),
     necesidad: requiredText(),
     porQueAhora: requiredText(),
     paraQue: requiredText(),

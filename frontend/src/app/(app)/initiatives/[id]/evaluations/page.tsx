@@ -13,6 +13,7 @@ import {
   getInitiative,
   listInitiativeEvaluations,
 } from '@/features/initiative/services/initiative.service';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { useAuthStore } from '@/stores/auth.store';
 
 type Props = { params: Promise<{ id: string }> };
@@ -21,6 +22,7 @@ export default function InitiativeEvaluationsPage({ params }: Props) {
   const { id } = use(params);
   const queryClient = useQueryClient();
   const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const initiativeQuery = useQuery({
     queryKey: ['initiative', id],
@@ -41,6 +43,16 @@ export default function InitiativeEvaluationsPage({ params }: Props) {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  async function handleDelete(evaluationId: string) {
+    const ok = await confirm({
+      title: 'Eliminar evaluación',
+      description: '¿Eliminar esta evaluación? Se borrará también su conversación.',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteMutation.mutate(evaluationId);
+  }
 
   return (
     <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
@@ -63,9 +75,10 @@ export default function InitiativeEvaluationsPage({ params }: Props) {
             items={evaluationsQuery.data ?? []}
             canDelete={isAdmin}
             isDeleting={deleteMutation.isPending}
-            onDelete={(evaluationId) => deleteMutation.mutate(evaluationId)}
+            onDelete={(evaluationId) => void handleDelete(evaluationId)}
           />
         )}
+        {confirmDialog}
       </div>
     </div>
   );

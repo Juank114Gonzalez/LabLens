@@ -15,6 +15,7 @@ import {
   getEvaluation,
 } from '@/features/evaluation/services/evaluation.service';
 import { EvaluationResultPanel } from '@/features/evaluation/components/evaluation-result-panel';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -30,6 +31,7 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
   const router = useRouter();
   const queryClient = useQueryClient();
   const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const byEvaluation = useQuery({
     queryKey: ['evaluation', id],
@@ -75,10 +77,14 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
               size="sm"
               disabled={deleteMutation.isPending}
               onClick={() => {
-                const ok = window.confirm(
-                  '¿Eliminar esta evaluación? Se borrará también su conversación.',
-                );
-                if (ok) deleteMutation.mutate(evaluation.id);
+                void confirm({
+                  title: 'Eliminar evaluación',
+                  description: '¿Eliminar esta evaluación? Se borrará también su conversación.',
+                  confirmLabel: 'Eliminar',
+                  variant: 'destructive',
+                }).then((ok) => {
+                  if (ok) deleteMutation.mutate(evaluation.id);
+                });
               }}
             >
               <Trash2 className="size-3.5" />
@@ -116,6 +122,7 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
             }
           />
         )}
+        {confirmDialog}
       </div>
     </div>
   );

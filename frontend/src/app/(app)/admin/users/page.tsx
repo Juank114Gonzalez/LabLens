@@ -27,6 +27,7 @@ import {
   type AdminUser,
 } from '@/features/admin/services/admin.service';
 import type { UserRole } from '@/types/auth';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { formatShortDate } from '@/shared/lib/dates';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -35,6 +36,7 @@ const ROLES: UserRole[] = ['EVALUATOR', 'ADMIN'];
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [newUser, setNewUser] = useState({
@@ -238,10 +240,14 @@ export default function AdminUsersPage() {
                       disabled={user.id === currentUserId || deleteMutation.isPending}
                       onClick={() => {
                         if (user.id === currentUserId) return;
-                        const ok = window.confirm(
-                          `¿Eliminar al usuario ${user.name}? Se borrarán también sus iniciativas asociadas.`,
-                        );
-                        if (ok) deleteMutation.mutate(user.id);
+                        void confirm({
+                          title: 'Eliminar usuario',
+                          description: `¿Eliminar a ${user.name}? Se borrarán también sus iniciativas asociadas.`,
+                          confirmLabel: 'Eliminar',
+                          variant: 'destructive',
+                        }).then((ok) => {
+                          if (ok) deleteMutation.mutate(user.id);
+                        });
                       }}
                     >
                       <Trash2 className="size-3.5" />
@@ -254,6 +260,7 @@ export default function AdminUsersPage() {
           </TableBody>
         </Table>
       )}
+      {confirmDialog}
       </div>
     </div>
   );

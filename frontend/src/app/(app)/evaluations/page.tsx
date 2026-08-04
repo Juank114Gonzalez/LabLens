@@ -11,12 +11,14 @@ import {
   deleteEvaluation,
   listEvaluations,
 } from '@/features/evaluation/services/evaluation.service';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function EvaluationsPage() {
   const queryClient = useQueryClient();
   const isAdmin = useAuthStore((state) => state.user?.role) === 'ADMIN';
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const query = useQuery({
     queryKey: ['evaluations'],
     queryFn: listEvaluations,
@@ -30,6 +32,16 @@ export default function EvaluationsPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  async function handleDelete(id: string, nombre: string) {
+    const ok = await confirm({
+      title: 'Eliminar evaluación',
+      description: `¿Eliminar la evaluación de "${nombre || 'Iniciativa'}"? Se borrará también su conversación.`,
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteMutation.mutate(id);
+  }
 
   return (
     <div className="h-full min-h-0 overflow-y-auto p-6 sm:p-8">
@@ -100,12 +112,9 @@ export default function EvaluationsPage() {
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
                         disabled={deleteMutation.isPending}
-                        onClick={() => {
-                          const ok = window.confirm(
-                            `¿Eliminar la evaluación de "${item.initiative.nombre || 'Iniciativa'}"? Se borrará también su conversación.`,
-                          );
-                          if (ok) deleteMutation.mutate(item.id);
-                        }}
+                        onClick={() =>
+                          void handleDelete(item.id, item.initiative.nombre)
+                        }
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -116,6 +125,7 @@ export default function EvaluationsPage() {
             })}
           </ul>
         )}
+        {confirmDialog}
       </div>
     </div>
   );

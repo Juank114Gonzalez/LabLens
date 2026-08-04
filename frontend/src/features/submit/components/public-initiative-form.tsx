@@ -10,12 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getErrorMessage } from '@/api/errors';
 import {
-  IMPACT_OPTIONS,
-  SOURCE_LABELS,
-  URGENCY_OPTIONS,
-} from '@/features/initiative/lib/status';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { getErrorMessage } from '@/api/errors';
+import { SOURCE_LABELS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 import {
   publicInitiativeFormSchema,
   type PublicInitiativeFormValues,
@@ -24,12 +28,10 @@ import { submitPublicInitiative } from '@/features/submit/services/submit.servic
 import type { PublicSubmissionResult, SourceType } from '@/features/submit/types';
 
 type Props = {
-  /** Preselected by `?source=` on the URL; still editable in the form. */
   defaultSourceType: SourceType;
   onSubmitted: (result: PublicSubmissionResult) => void;
 };
 
-/** Shown under the channel field so the choice explains itself without a step. */
 const SOURCE_HINTS: Record<SourceType, string> = {
   INTERNAL: 'Operaciones, Negocio, Riesgos, TI o Canales Digitales enviando una necesidad propia.',
   EXTERNAL_CONTRACTOR: 'Proveedores, aliados o contractors con acceso al Laboratorio Digital.',
@@ -37,19 +39,21 @@ const SOURCE_HINTS: Record<SourceType, string> = {
     'Un benchmark visto en un congreso, simposio o publicación que vale la pena replicar.',
 };
 
+const selectClassName =
+  'flex h-9 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm';
+
 function defaultValues(sourceType: SourceType): PublicInitiativeFormValues {
   return {
     sourceType,
     submitterName: '',
     submitterEmail: '',
-    diligenciadoPor: '',
     fechaDiligenciamiento: new Date().toISOString().slice(0, 10),
     expectativaSolucion: '',
     nombre: '',
     areaProcesoImpactado: '',
     areaInvolucrada: '',
     urgencia: 'Media',
-    impacto: 'Medio',
+    impacto: '',
     necesidad: '',
     porQueAhora: '',
     paraQue: '',
@@ -71,8 +75,6 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     mode: 'onBlur',
   });
 
-  // Watched, not read from props: the reference block appears the moment the
-  // channel changes, without remounting the form and losing what was typed.
   const sourceType = form.watch('sourceType');
   const isReference = sourceType === 'INTERNATIONAL_REFERENCE';
 
@@ -84,6 +86,7 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     try {
       const result = await submitPublicInitiative({
         ...values,
+        diligenciadoPor: values.submitterName,
         fechaDiligenciamiento: new Date(values.fechaDiligenciamiento).toISOString(),
         referenceOrganization: isReference ? values.referenceOrganization : undefined,
         referenceEvent: isReference ? values.referenceEvent : undefined,
@@ -131,13 +134,13 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
             </Field>
           </div>
           <Field label="Tu nombre" error={errors.submitterName?.message}>
-            <Input {...form.register('submitterName')} />
+            <Input
+              placeholder="Quien diligencia este formulario"
+              {...form.register('submitterName')}
+            />
           </Field>
           <Field label="Tu correo" error={errors.submitterEmail?.message}>
             <Input type="email" {...form.register('submitterEmail')} />
-          </Field>
-          <Field label="Diligenciado por" error={errors.diligenciadoPor?.message}>
-            <Input {...form.register('diligenciadoPor')} />
           </Field>
           <Field label="Fecha de diligenciamiento" error={errors.fechaDiligenciamiento?.message}>
             <Input type="date" {...form.register('fechaDiligenciamiento')} />
@@ -193,24 +196,22 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
           <Field label="Áreas a involucrar" error={errors.areaInvolucrada?.message}>
             <Input {...form.register('areaInvolucrada')} />
           </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Urgencia" error={errors.urgencia?.message}>
-              <select className={selectClassName} {...form.register('urgencia')}>
-                {URGENCY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </Field>
+          <Field label="Urgencia" error={errors.urgencia?.message}>
+            <select className={selectClassName} {...form.register('urgencia')}>
+              {URGENCY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="sm:col-span-2">
             <Field label="Impacto" error={errors.impacto?.message}>
-              <select className={selectClassName} {...form.register('impacto')}>
-                {IMPACT_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+              <Textarea
+                rows={2}
+                placeholder="Describe el impacto esperado (negocio, usuarios, operación…)"
+                {...form.register('impacto')}
+              />
             </Field>
           </div>
         </CardContent>
@@ -257,50 +258,76 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
             Agregar
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {contacts.fields.map((field, index) => (
-            <div
-              key={field.id}
-              className="grid gap-3 rounded-xl border border-border/60 p-4 sm:grid-cols-2"
-            >
-              <Field
-                label="Empresa / persona"
-                error={errors.companyContacts?.[index]?.empresa?.message}
-              >
-                <Input {...form.register(`companyContacts.${index}.empresa`)} />
-              </Field>
-              <Field
-                label="Contacto"
-                error={errors.companyContacts?.[index]?.contacto?.message}
-              >
-                <Input {...form.register(`companyContacts.${index}.contacto`)} />
-              </Field>
-              <Field label="Cargo / rol" error={errors.companyContacts?.[index]?.cargo?.message}>
-                <Input {...form.register(`companyContacts.${index}.cargo`)} />
-              </Field>
-              <Field label="Correo" error={errors.companyContacts?.[index]?.correo?.message}>
-                <Input type="email" {...form.register(`companyContacts.${index}.correo`)} />
-              </Field>
-              <Field label="Teléfono" error={errors.companyContacts?.[index]?.telefono?.message}>
-                <Input {...form.register(`companyContacts.${index}.telefono`)} />
-              </Field>
-              {contacts.fields.length > 1 ? (
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => contacts.remove(index)}
-                  >
-                    <Trash2 className="size-4" />
-                    Quitar
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ))}
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Contacto</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Correo</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {contacts.fields.map((field, index) => (
+                <TableRow key={field.id}>
+                  <TableCell>
+                    <Input
+                      placeholder="Empresa"
+                      aria-label="Empresa"
+                      {...form.register(`companyContacts.${index}.empresa`)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="Contacto"
+                      aria-label="Contacto"
+                      {...form.register(`companyContacts.${index}.contacto`)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="Cargo"
+                      aria-label="Cargo"
+                      {...form.register(`companyContacts.${index}.cargo`)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="email"
+                      placeholder="Correo"
+                      aria-label="Correo"
+                      {...form.register(`companyContacts.${index}.correo`)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="Teléfono"
+                      aria-label="Teléfono"
+                      {...form.register(`companyContacts.${index}.telefono`)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {contacts.fields.length > 1 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Quitar contacto"
+                        onClick={() => contacts.remove(index)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           {errors.companyContacts?.message ? (
-            <p className="text-xs text-destructive">{errors.companyContacts.message}</p>
+            <p className="mt-2 text-xs text-destructive">{errors.companyContacts.message}</p>
           ) : null}
         </CardContent>
       </Card>
@@ -334,6 +361,3 @@ function Field({
     </div>
   );
 }
-
-const selectClassName =
-  'flex h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm';

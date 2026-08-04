@@ -25,6 +25,7 @@ import {
   type InitiativeFilters,
 } from '@/features/initiative/services/initiative.service';
 import { INITIATIVE_STATUS_LABELS, SOURCE_LABELS } from '@/features/initiative/lib/status';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ScrollablePage } from '@/shared/components/scrollable-page';
 import { formatShortDate } from '@/shared/lib/dates';
@@ -34,6 +35,7 @@ export default function InitiativesPage() {
   const queryClient = useQueryClient();
   const role = useAuthStore((state) => state.user?.role);
   const isAdmin = role === 'ADMIN';
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [filters, setFilters] = useState<InitiativeFilters>({});
   const query = useQuery({
     queryKey: ['initiatives', filters],
@@ -52,6 +54,16 @@ export default function InitiativesPage() {
 
   function canDelete(status: string) {
     return isAdmin || status === 'DRAFT';
+  }
+
+  async function handleDelete(id: string, nombre: string) {
+    const ok = await confirm({
+      title: 'Eliminar iniciativa',
+      description: `¿Eliminar la iniciativa "${nombre || 'Sin nombre'}"? También se eliminarán sus evaluaciones y evidencias.`,
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteMutation.mutate(id);
   }
 
   return (
@@ -145,12 +157,7 @@ export default function InitiativesPage() {
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
                           disabled={deleteMutation.isPending}
-                          onClick={() => {
-                            const ok = window.confirm(
-                              `¿Eliminar la iniciativa "${item.nombre || 'Sin nombre'}"? También se eliminarán sus evaluaciones y evidencias.`,
-                            );
-                            if (ok) deleteMutation.mutate(item.id);
-                          }}
+                          onClick={() => void handleDelete(item.id, item.nombre)}
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -162,6 +169,7 @@ export default function InitiativesPage() {
             </TableBody>
           </Table>
         )}
+        {confirmDialog}
       </>
     </ScrollablePage>
   );

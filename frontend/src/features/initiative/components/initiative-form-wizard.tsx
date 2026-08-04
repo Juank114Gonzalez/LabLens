@@ -33,7 +33,7 @@ import {
   initiativeFormSchema,
   type InitiativeFormValues,
 } from '@/features/initiative/schemas/initiative-form.schema';
-import { formatBytes, IMPACT_OPTIONS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
+import { formatBytes, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 import type { Attachment, DomainInitiative } from '@/features/initiative/types';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -58,8 +58,12 @@ function toFormValues(initiative: DomainInitiative, userName: string): Initiativ
     nombre: initiative.nombre || '',
     areaProcesoImpactado: initiative.areaProcesoImpactado || '',
     areaInvolucrada: initiative.areaInvolucrada || '',
-    urgencia: (initiative.urgencia as InitiativeFormValues['urgencia']) || 'Media',
-    impacto: (initiative.impacto as InitiativeFormValues['impacto']) || 'Medio',
+    urgencia: URGENCY_OPTIONS.includes(
+      initiative.urgencia as (typeof URGENCY_OPTIONS)[number],
+    )
+      ? (initiative.urgencia as InitiativeFormValues['urgencia'])
+      : 'Media',
+    impacto: initiative.impacto || '',
     necesidad: initiative.necesidad || '',
     porQueAhora: initiative.porQueAhora || '',
     paraQue: initiative.paraQue || '',
@@ -240,7 +244,7 @@ export function InitiativeFormWizard({ initiative }: Props) {
               </Field>
               <Field label="Urgencia">
                 <select
-                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm"
+                  className="flex h-9 w-full cursor-pointer rounded-lg border border-input bg-transparent px-3 text-sm disabled:cursor-not-allowed"
                   disabled={locked}
                   {...form.register('urgencia')}
                 >
@@ -251,19 +255,16 @@ export function InitiativeFormWizard({ initiative }: Props) {
                   ))}
                 </select>
               </Field>
-              <Field label="Impacto">
-                <select
-                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm"
-                  disabled={locked}
-                  {...form.register('impacto')}
-                >
-                  {IMPACT_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <div className="sm:col-span-2">
+                <Field label="Impacto" error={form.formState.errors.impacto?.message}>
+                  <Textarea
+                    rows={2}
+                    disabled={locked}
+                    placeholder="Describe el impacto esperado"
+                    {...form.register('impacto')}
+                  />
+                </Field>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -321,7 +322,7 @@ export function InitiativeFormWizard({ initiative }: Props) {
                 <TableHead>Cargo</TableHead>
                 <TableHead>Correo</TableHead>
                 <TableHead>Teléfono</TableHead>
-                <TableHead />
+                <TableHead className="w-12">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

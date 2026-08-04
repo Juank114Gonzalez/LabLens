@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IMPACT_OPTIONS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
+import { URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 
 export const contactSchema = z.object({
   empresa: z.string().trim().min(1, 'Empresa requerida'),
@@ -17,7 +17,7 @@ export const initiativeFormSchema = z.object({
   areaProcesoImpactado: z.string().trim().min(1, 'Requerido'),
   areaInvolucrada: z.string().trim().min(1, 'Requerido'),
   urgencia: z.enum(URGENCY_OPTIONS),
-  impacto: z.enum(IMPACT_OPTIONS),
+  impacto: z.string().trim().min(1, 'Requerido').max(500),
   necesidad: z.string().trim().min(1, 'Requerido'),
   porQueAhora: z.string().trim().min(1, 'Requerido'),
   paraQue: z.string().trim().min(1, 'Requerido'),

@@ -42,9 +42,15 @@ function SectionCard({
 }
 
 function fitTone(fit: number) {
-  if (fit >= 80) return 'text-emerald-700';
-  if (fit >= 60) return 'text-amber-700';
-  return 'text-rose-700';
+  if (fit >= 80) return 'text-emerald-600 dark:text-emerald-400';
+  if (fit >= 60) return 'text-amber-600 dark:text-amber-400';
+  return 'text-rose-600 dark:text-rose-400';
+}
+
+function barTone(fit: number) {
+  if (fit >= 80) return 'bg-emerald-500';
+  if (fit >= 60) return 'bg-amber-500';
+  return 'bg-rose-500';
 }
 
 export function EvaluationResultPanel({
@@ -57,21 +63,27 @@ export function EvaluationResultPanel({
   return (
     <div className={cn('space-y-4', className)}>
       <SectionCard title="Score general · Fit" delay={0.02}>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className={cn('font-heading text-5xl font-semibold', fitTone(fit))}>{fit}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Escala 0–100 · inmutable</p>
-          </div>
-          <div className="text-right text-sm">
-            <p className="font-medium">Prioridad {evaluation.priority ?? '—'}</p>
-            <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
-              {evaluation.priorityJustification}
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
+          <div className="shrink-0 space-y-2">
+            <p className={cn('font-heading text-5xl font-semibold leading-none', fitTone(fit))}>
+              {fit}
             </p>
+            <p className="text-xs text-muted-foreground">Escala 0–100 · inmutable</p>
+          </div>
+          <div className="min-w-0 flex-1 space-y-2 text-left">
+            <p className="font-heading text-base font-semibold">
+              Prioridad {evaluation.priority ?? '—'}
+            </p>
+            {evaluation.priorityJustification ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {evaluation.priorityJustification}
+              </p>
+            ) : null}
           </div>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+        <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className={cn('h-full rounded-full transition-all', barTone(fit))}
             style={{ width: `${Math.min(100, Math.max(0, fit))}%` }}
           />
         </div>

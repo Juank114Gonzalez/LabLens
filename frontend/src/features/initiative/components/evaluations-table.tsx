@@ -104,12 +104,7 @@ export function EvaluationsTable({
                     variant="ghost"
                     className="text-destructive hover:text-destructive"
                     disabled={isDeleting}
-                    onClick={() => {
-                      const ok = window.confirm(
-                        '¿Eliminar esta evaluación? Se borrará también su conversación.',
-                      );
-                      if (ok) onDelete?.(item.id);
-                    }}
+                    onClick={() => onDelete?.(item.id)}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>

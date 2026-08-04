@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { contactSchema } from '@/features/initiative/schemas/initiative-form.schema';
-import { IMPACT_OPTIONS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
+import { URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 
 export const SOURCE_TYPES = [
   'INTERNAL',
@@ -12,17 +12,17 @@ export const SOURCE_TYPES = [
 export const publicInitiativeFormSchema = z
   .object({
     sourceType: z.enum(SOURCE_TYPES),
+    /** Nombre de quien envía; también se usa como diligenciadoPor. */
     submitterName: z.string().trim().min(1, 'Requerido'),
     submitterEmail: z.string().trim().email('Correo inválido'),
 
-    diligenciadoPor: z.string().trim().min(1, 'Requerido'),
     fechaDiligenciamiento: z.string().min(1, 'Requerido'),
     expectativaSolucion: z.string().trim().min(1, 'Requerido'),
     nombre: z.string().trim().min(1, 'Requerido'),
     areaProcesoImpactado: z.string().trim().min(1, 'Requerido'),
     areaInvolucrada: z.string().trim().min(1, 'Requerido'),
     urgencia: z.enum(URGENCY_OPTIONS),
-    impacto: z.enum(IMPACT_OPTIONS),
+    impacto: z.string().trim().min(1, 'Requerido').max(500),
     necesidad: z.string().trim().min(1, 'Requerido'),
     porQueAhora: z.string().trim().min(1, 'Requerido'),
     paraQue: z.string().trim().min(1, 'Requerido'),

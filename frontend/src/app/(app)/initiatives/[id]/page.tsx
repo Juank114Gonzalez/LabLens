@@ -19,6 +19,7 @@ import {
   getInitiative,
 } from '@/features/initiative/services/initiative.service';
 import { formatBytes, INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
+import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
 import { useAuthStore } from '@/stores/auth.store';
@@ -31,6 +32,7 @@ export default function InitiativeDetailPage({ params }: Props) {
   const queryClient = useQueryClient();
   const role = useAuthStore((state) => state.user?.role);
   const isAdmin = role === 'ADMIN';
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const query = useQuery({
     queryKey: ['initiative', id],
     queryFn: () => getInitiative(id),
@@ -55,6 +57,26 @@ export default function InitiativeDetailPage({ params }: Props) {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  async function handleDeleteInitiative(nombre: string) {
+    const ok = await confirm({
+      title: 'Eliminar iniciativa',
+      description: `¿Eliminar la iniciativa "${nombre || 'Sin nombre'}"? También se eliminarán sus evaluaciones y evidencias.`,
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteMutation.mutate();
+  }
+
+  async function handleDeleteEvaluation(evaluationId: string) {
+    const ok = await confirm({
+      title: 'Eliminar evaluación',
+      description: '¿Eliminar esta evaluación? Se borrará también su conversación.',
+      confirmLabel: 'Eliminar',
+      variant: 'destructive',
+    });
+    if (ok) deleteEvaluationMutation.mutate(evaluationId);
+  }
 
   if (query.isLoading) {
     return (
@@ -110,12 +132,7 @@ export default function InitiativeDetailPage({ params }: Props) {
               type="button"
               variant="destructive"
               disabled={deleteMutation.isPending}
-              onClick={() => {
-                const ok = window.confirm(
-                  `¿Eliminar la iniciativa "${data.nombre || 'Sin nombre'}"? También se eliminarán sus evaluaciones y evidencias.`,
-                );
-                if (ok) deleteMutation.mutate();
-              }}
+              onClick={() => void handleDeleteInitiative(data.nombre)}
             >
               <Trash2 className="size-4" />
               Eliminar
@@ -193,11 +210,12 @@ export default function InitiativeDetailPage({ params }: Props) {
             items={data.evaluations ?? []}
             canDelete={isAdmin}
             isDeleting={deleteEvaluationMutation.isPending}
-            onDelete={(evaluationId) => deleteEvaluationMutation.mutate(evaluationId)}
+            onDelete={(evaluationId) => void handleDeleteEvaluation(evaluationId)}
           />
         </CardContent>
       </Card>
       </div>
+      {confirmDialog}
     </div>
   );
 }

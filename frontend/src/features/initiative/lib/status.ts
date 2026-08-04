@@ -18,8 +18,7 @@ export const INITIATIVE_STATUS_LABELS: Record<InitiativeStatus, string> = {
   ARCHIVED: 'Archivada',
 };
 
-export const URGENCY_OPTIONS = ['Baja', 'Media', 'Alta', 'Crítica'] as const;
-export const IMPACT_OPTIONS = ['Bajo', 'Medio', 'Alto', 'Muy alto'] as const;
+export const URGENCY_OPTIONS = ['Baja', 'Media', 'Alta'] as const;
 
 export function formatBytes(size: number) {
   if (size < 1024) return `${size} B`;
