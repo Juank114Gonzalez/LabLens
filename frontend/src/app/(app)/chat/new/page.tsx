@@ -23,7 +23,7 @@ export default function NewEvaluationChatPage() {
 
   const initiativesQuery = useQuery({
     queryKey: ['initiatives', 'for-evaluation'],
-    queryFn: listInitiatives,
+    queryFn: () => listInitiatives(),
   });
 
   const eligible = (initiativesQuery.data ?? []).filter(

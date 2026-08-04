@@ -11,7 +11,6 @@ import type {
   CreateCompanyContactDto,
   UpdateCompanyContactDto,
 } from '../validators/company-contact.validator.js';
-import { AppError } from '../utils/AppError.js';
 
 async function assertInitiativeAccess(
   initiativeId: string,
@@ -27,10 +26,7 @@ export async function createContactForActor(
   actor: { id: string; role: Role },
   input: CreateCompanyContactDto,
 ) {
-  const initiative = await assertInitiativeAccess(input.initiativeId, actor);
-  if (actor.role === Role.GENERATOR && initiative.userId !== actor.id) {
-    throw new AppError('Initiative not found', 404);
-  }
+  await assertInitiativeAccess(input.initiativeId, actor);
   return createCompanyContact(input);
 }
 

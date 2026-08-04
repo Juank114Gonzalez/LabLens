@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import {
+  createUser,
   deleteUser,
   findUserByEmail,
   findUserById,
@@ -8,7 +9,10 @@ import {
   updateUser,
   updateUserRole,
 } from '../repositories/user.repository.js';
-import type { UpdateUserAdminDto } from '../validators/user-admin.validator.js';
+import type {
+  CreateUserAdminDto,
+  UpdateUserAdminDto,
+} from '../validators/user-admin.validator.js';
 import { AppError } from '../utils/AppError.js';
 
 function toPublicUser(user: {
@@ -33,6 +37,23 @@ function toPublicUser(user: {
 
 export async function listUsersAdmin() {
   return listUsers();
+}
+
+export async function createUserAdmin(input: CreateUserAdminDto) {
+  const existing = await findUserByEmail(input.email);
+  if (existing) {
+    throw new AppError('Email already registered', 409);
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, 10);
+  return toPublicUser(
+    await createUser({
+      name: input.name,
+      email: input.email,
+      passwordHash,
+      role: input.role,
+    }),
+  );
 }
 
 export async function getUserAdmin(id: string) {

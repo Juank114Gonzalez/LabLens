@@ -1,13 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import {
   loginSchema,
@@ -63,13 +61,6 @@ export function LoginForm() {
       <Button type="submit" className="w-full" disabled={isLoggingIn}>
         {isLoggingIn ? 'Entrando…' : 'Entrar al Comité'}
       </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        ¿Aún no tienes cuenta?{' '}
-        <Link href={routes.register} className="text-primary underline-offset-4 hover:underline">
-          Crear cuenta
-        </Link>
-      </p>
     </motion.form>
   );
 }

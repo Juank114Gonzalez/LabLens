@@ -8,7 +8,6 @@ datasource db {
 }
 
 enum Role {
-  GENERATOR
   EVALUATOR
   ADMIN
 }
@@ -55,7 +54,7 @@ model User {
   name          String
   email         String         @unique
   passwordHash  String
-  role          Role           @default(GENERATOR)
+  role          Role           @default(EVALUATOR)
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

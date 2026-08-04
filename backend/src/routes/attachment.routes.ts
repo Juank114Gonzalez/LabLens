@@ -26,14 +26,14 @@ attachmentRouter.get('/download', asyncHandler(downloadAttachmentsController));
 
 attachmentRouter.post(
   '/',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   upload.single('file'),
   asyncHandler(uploadAttachmentController),
 );
 
 attachmentRouter.delete(
   '/:id',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   asyncHandler(deleteAttachmentController),
 );
 

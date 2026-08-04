@@ -25,6 +25,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-viz-1: var(--viz-1);
+  --color-viz-2: var(--viz-2);
+  --color-viz-3: var(--viz-3);
+  --color-viz-4: var(--viz-4);
+  --color-viz-5: var(--viz-5);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -79,6 +84,15 @@
   --chart-3: oklch(0.72 0.12 75);
   --chart-4: oklch(0.5 0.08 220);
   --chart-5: oklch(0.4 0.05 165);
+  /* Categorical data-viz slots. Fixed order — assigned by entity, never cycled.
+     Validated for the light surface (--card): lightness band, chroma floor,
+     adjacent CVD separation and normal-vision separation all pass. Three slots
+     sit under 3:1 contrast, so every chart using them ships visible labels. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
   --radius: 0.75rem;
   --sidebar: oklch(0.975 0.01 165);
   --sidebar-foreground: oklch(0.2 0.02 165);
@@ -118,6 +132,13 @@
   --chart-3: oklch(0.78 0.12 75);
   --chart-4: oklch(0.65 0.08 220);
   --chart-5: oklch(0.55 0.04 165);
+  /* Same five hues, re-stepped for the dark surface and validated as a set —
+     not an automatic flip of the light values. */
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-4: #c98500;
+  --viz-5: #d55181;
   --sidebar: oklch(0.16 0.02 165);
   --sidebar-foreground: oklch(0.94 0.01 165);
   --sidebar-primary: oklch(0.78 0.12 175);

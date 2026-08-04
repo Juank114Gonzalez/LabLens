@@ -1,4 +1,4 @@
-export type UserRole = 'GENERATOR' | 'EVALUATOR' | 'ADMIN';
+export type UserRole = 'EVALUATOR' | 'ADMIN';
 
 export type AuthUser = {
   id: string;
@@ -15,12 +15,6 @@ export type AuthTokens = {
 };
 
 export type LoginPayload = {
-  email: string;
-  password: string;
-};
-
-export type RegisterPayload = {
-  name: string;
   email: string;
   password: string;
 };

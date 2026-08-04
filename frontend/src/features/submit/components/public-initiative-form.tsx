@@ -11,12 +11,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getErrorMessage } from '@/api/errors';
-import { IMPACT_OPTIONS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
+import {
+  IMPACT_OPTIONS,
+  SOURCE_LABELS,
+  URGENCY_OPTIONS,
+} from '@/features/initiative/lib/status';
 import {
   publicInitiativeFormSchema,
   type PublicInitiativeFormValues,
 } from '@/features/submit/schemas/public-initiative.schema';
-import { SOURCE_LABELS } from '@/features/submit/components/source-selector';
 import { submitPublicInitiative } from '@/features/submit/services/submit.service';
 import type { PublicSubmissionResult, SourceType } from '@/features/submit/types';
 

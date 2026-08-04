@@ -1,11 +1,7 @@
-import { Role } from '@prisma/client';
+import type { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import type { Response } from 'express';
-import {
-  createUser,
-  findUserByEmail,
-  findUserById,
-} from '../repositories/user.repository.js';
+import { findUserByEmail, findUserById } from '../repositories/user.repository.js';
 import type { AuthSessionResponse, AuthUser } from '../types/auth.types.js';
 import { AppError } from '../utils/AppError.js';
 import {
@@ -16,8 +12,6 @@ import {
   setRefreshCookie,
   signAccessToken,
 } from './token.service.js';
-
-const BCRYPT_ROUNDS = 10;
 
 function toAuthUser(user: {
   id: string;
@@ -51,26 +45,6 @@ async function createSession(user: AuthUser, res: Response): Promise<AuthSession
   const refreshToken = await issueRefreshToken(user.id);
   setRefreshCookie(res, refreshToken);
   return toSession(user, token, expiresAt);
-}
-
-export async function registerUser(
-  input: { name: string; email: string; password: string },
-  res: Response,
-): Promise<AuthSessionResponse> {
-  const existing = await findUserByEmail(input.email);
-  if (existing) {
-    throw new AppError('Email already registered', 409);
-  }
-
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-  const user = await createUser({
-    name: input.name.trim(),
-    email: input.email,
-    passwordHash,
-    role: Role.GENERATOR,
-  });
-
-  return createSession(toAuthUser(user), res);
 }
 
 export async function loginUser(
