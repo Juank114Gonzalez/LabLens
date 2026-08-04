@@ -3,7 +3,7 @@
 ## Parte 1 · Enviar una iniciativa (sin cuenta)
 
 1. Entra a `/submit`. No necesitas usuario ni contraseña.
-2. Elige el canal de origen. Determina qué te pregunta el formulario:
+2. En el primer campo elige el canal de origen. Determina qué más te pregunta el formulario:
    - **Área interna de ACH** — Operaciones, Negocio, Riesgos, TI o Canales Digitales.
    - **Organización externa** — proveedores, aliados o contractors con acceso.
    - **Referencia internacional** — un benchmark visto en un congreso o publicación. Pide además la organización, el evento, el enlace y por qué es relevante para ACH.

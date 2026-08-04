@@ -16,7 +16,7 @@ Tres casos elegidos para mostrar las tres cosas que definen la propuesta: que fi
 
 **Qué demuestra:** que lo operativo no llega al comité.
 
-1. En la ventana de incógnito, `/submit`. Señala que no hay login. Elige **Área interna de ACH**.
+1. En la ventana de incógnito, `/submit`. Señala que no hay login y que el formulario abre directo. Deja el canal en **Área interna de ACH**.
 2. Pega una solicitud claramente operativa:
 
    > **Nombre:** Corregir el timeout en el reporte de conciliación diaria
@@ -36,7 +36,7 @@ Tres casos elegidos para mostrar las tres cosas que definen la propuesta: que fi
 
 **Qué demuestra:** que lo que sí es del Lab recibe el expediente completo.
 
-1. Mismo formulario, canal **Organización externa**. Pega una propuesta disruptiva:
+1. Mismo formulario; cambia el canal a **Organización externa**. Pega una propuesta disruptiva:
 
    > **Nombre:** Identidad reutilizable para transferencias de primer contacto
    > **Expectativa:** Una credencial verificable que el receptor pueda validar sin exponer datos del pagador.
