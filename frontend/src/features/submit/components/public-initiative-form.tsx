@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getErrorMessage } from '@/api/errors';
-import { SOURCE_LABELS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
+import { formatBytes, SOURCE_LABELS, URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 import {
   publicInitiativeFormSchema,
   type PublicInitiativeFormValues,
 } from '@/features/submit/schemas/public-initiative.schema';
 import { submitPublicInitiative } from '@/features/submit/services/submit.service';
 import type { PublicSubmissionResult, SourceType } from '@/features/submit/types';
+
+const ACCEPTED_EVIDENCE =
+  '.pdf,.docx,.xlsx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+const MAX_EVIDENCE_FILES = 10;
+const MAX_EVIDENCE_BYTES = 15 * 1024 * 1024;
 
 type Props = {
   defaultSourceType: SourceType;
@@ -68,6 +74,7 @@ function defaultValues(sourceType: SourceType): PublicInitiativeFormValues {
 
 export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) {
   const [submitting, setSubmitting] = useState(false);
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
 
   const form = useForm<PublicInitiativeFormValues>({
     resolver: zodResolver(publicInitiativeFormSchema) as never,
@@ -81,18 +88,42 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
   const contacts = useFieldArray({ control: form.control, name: 'companyContacts' });
   const errors = form.formState.errors;
 
+  function onPickEvidence(fileList: FileList | null) {
+    if (!fileList?.length) return;
+
+    const next = [...evidenceFiles];
+    for (const file of Array.from(fileList)) {
+      if (next.length >= MAX_EVIDENCE_FILES) {
+        toast.error(`Máximo ${MAX_EVIDENCE_FILES} evidencias`);
+        break;
+      }
+      if (file.size > MAX_EVIDENCE_BYTES) {
+        toast.error(`${file.name} supera 15 MB`);
+        continue;
+      }
+      if (next.some((item) => item.name === file.name && item.size === file.size)) {
+        continue;
+      }
+      next.push(file);
+    }
+    setEvidenceFiles(next);
+  }
+
   async function onSubmit(values: PublicInitiativeFormValues) {
     setSubmitting(true);
     try {
-      const result = await submitPublicInitiative({
-        ...values,
-        diligenciadoPor: values.submitterName,
-        fechaDiligenciamiento: new Date(values.fechaDiligenciamiento).toISOString(),
-        referenceOrganization: isReference ? values.referenceOrganization : undefined,
-        referenceEvent: isReference ? values.referenceEvent : undefined,
-        referenceLink: isReference ? values.referenceLink : undefined,
-        referenceRationale: isReference ? values.referenceRationale : undefined,
-      });
+      const result = await submitPublicInitiative(
+        {
+          ...values,
+          diligenciadoPor: values.submitterName,
+          fechaDiligenciamiento: new Date(values.fechaDiligenciamiento).toISOString(),
+          referenceOrganization: isReference ? values.referenceOrganization : undefined,
+          referenceEvent: isReference ? values.referenceEvent : undefined,
+          referenceLink: isReference ? values.referenceLink : undefined,
+          referenceRationale: isReference ? values.referenceRationale : undefined,
+        },
+        evidenceFiles,
+      );
       onSubmitted(result);
     } catch (error) {
       toast.error(getErrorMessage(error, 'No se pudo enviar la iniciativa'));
@@ -328,6 +359,66 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
           </Table>
           {errors.companyContacts?.message ? (
             <p className="mt-2 text-xs text-destructive">{errors.companyContacts.message}</p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader>
+          <CardTitle>Evidencias</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Adjunta documentos o capturas que respalden la necesidad (PDF, DOCX, XLSX, PNG o JPG).
+            Opcional, máximo {MAX_EVIDENCE_FILES} archivos de 15 MB cada uno.
+          </p>
+          <Label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border/80 px-4 py-6 text-sm transition-colors hover:bg-muted/40">
+            <Upload className="size-4 shrink-0" />
+            Subir evidencias
+            <input
+              type="file"
+              className="hidden"
+              accept={ACCEPTED_EVIDENCE}
+              multiple
+              onChange={(event) => {
+                onPickEvidence(event.target.files);
+                event.target.value = '';
+              }}
+            />
+          </Label>
+          {evidenceFiles.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Peso</TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {evidenceFiles.map((file, index) => (
+                  <TableRow key={`${file.name}-${file.size}-${index}`}>
+                    <TableCell className="max-w-[220px] truncate">{file.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{file.type || '—'}</TableCell>
+                    <TableCell>{formatBytes(file.size)}</TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Quitar ${file.name}`}
+                        onClick={() =>
+                          setEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : null}
         </CardContent>
       </Card>

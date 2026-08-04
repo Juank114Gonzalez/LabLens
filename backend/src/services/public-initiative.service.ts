@@ -1,6 +1,8 @@
 import { InitiativeStatus } from '@prisma/client';
+import { createAttachment } from '../repositories/attachment.repository.js';
 import { createInitiative } from '../repositories/domain-initiative.repository.js';
 import type { PublicInitiativeDto } from '../validators/public-initiative.validator.js';
+import { uploadAttachmentBuffer } from './cloudinary.service.js';
 import { runTriage, type TriageResult } from './triage.service.js';
 
 export type PublicSubmissionResult = {
@@ -20,6 +22,7 @@ export type PublicSubmissionResult = {
  */
 export async function submitPublicInitiative(
   input: PublicInitiativeDto,
+  files: Express.Multer.File[] = [],
 ): Promise<PublicSubmissionResult> {
   const { companyContacts, ...fields } = input;
 
@@ -32,6 +35,19 @@ export async function submitPublicInitiative(
     },
     companyContacts,
   });
+
+  for (const file of files) {
+    const uploaded = await uploadAttachmentBuffer({
+      buffer: file.buffer,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
+    await createAttachment({
+      initiativeId: initiative.id,
+      ...uploaded,
+    });
+  }
 
   let triage: TriageResult | null = null;
 

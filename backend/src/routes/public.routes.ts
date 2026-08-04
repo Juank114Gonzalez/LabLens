@@ -2,6 +2,10 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env.js';
 import { submitPublicInitiativeController } from '../controllers/public-initiative.controller.js';
+import {
+  parsePublicInitiativeBody,
+  parsePublicSubmissionUpload,
+} from '../middlewares/public-submission.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { publicInitiativeSchema } from '../validators/public-initiative.validator.js';
@@ -24,6 +28,8 @@ const submissionRateLimit = rateLimit({
 publicRouter.post(
   '/initiatives',
   submissionRateLimit,
+  parsePublicSubmissionUpload,
+  parsePublicInitiativeBody,
   validateRequest(publicInitiativeSchema),
   asyncHandler(submitPublicInitiativeController),
 );

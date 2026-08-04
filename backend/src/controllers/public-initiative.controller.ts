@@ -5,5 +5,6 @@ import type { PublicInitiativeDto } from '../validators/public-initiative.valida
 
 export async function submitPublicInitiativeController(req: Request, res: Response) {
   const body = req.body as PublicInitiativeDto;
-  sendSuccess(res, await submitPublicInitiative(body), 201);
+  const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+  sendSuccess(res, await submitPublicInitiative(body, files), 201);
 }

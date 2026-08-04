@@ -6,6 +6,7 @@ import { FileText, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { routes } from '@/config/routes';
+import { EvaluationProse } from '@/features/evaluation/components/evaluation-prose';
 import type { EvaluationResult } from '@/types/evaluation';
 import { cn } from '@/lib/utils';
 
@@ -63,22 +64,18 @@ export function EvaluationResultPanel({
   return (
     <div className={cn('space-y-4', className)}>
       <SectionCard title="Score general · Fit" delay={0.02}>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
-          <div className="shrink-0 space-y-2">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
             <p className={cn('font-heading text-5xl font-semibold leading-none', fitTone(fit))}>
               {fit}
             </p>
             <p className="text-xs text-muted-foreground">Escala 0–100 · inmutable</p>
           </div>
-          <div className="min-w-0 flex-1 space-y-2 text-left">
-            <p className="font-heading text-base font-semibold">
-              Prioridad {evaluation.priority ?? '—'}
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Prioridad</p>
+            <p className="font-heading text-xl font-semibold">
+              {evaluation.priority ?? '—'}
             </p>
-            {evaluation.priorityJustification ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {evaluation.priorityJustification}
-              </p>
-            ) : null}
           </div>
         </div>
         <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted">
@@ -94,7 +91,9 @@ export function EvaluationResultPanel({
           <SectionCard key={item.criteriaId} title={item.nombre} delay={0.04 + index * 0.03}>
             <p className="font-heading text-2xl font-semibold">{item.score}</p>
             <p className="mt-1 text-xs text-muted-foreground">Peso {item.peso}%</p>
-            <p className="mt-2 text-sm">{item.justification}</p>
+            <div className="mt-3">
+              <EvaluationProse content={item.justification} />
+            </div>
           </SectionCard>
         ))}
       </div>
@@ -104,55 +103,69 @@ export function EvaluationResultPanel({
           <p className="font-heading text-lg font-medium">
             {evaluation.classification?.nombre ?? '—'}
           </p>
-          <p className="mt-1 text-muted-foreground">
-            {evaluation.classification?.descripcion}
-          </p>
-          <p className="mt-3 text-sm">{evaluation.classification?.justification}</p>
+          {evaluation.classification?.descripcion ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {evaluation.classification.descripcion}
+            </p>
+          ) : null}
+          {evaluation.classification?.justification ? (
+            <div className="mt-3 border-t border-border/60 pt-3">
+              <EvaluationProse content={evaluation.classification.justification} />
+            </div>
+          ) : null}
         </SectionCard>
         <SectionCard title="Mesa sugerida" delay={0.23}>
           <p className="font-heading text-lg font-medium">
             {evaluation.workTable?.nombre ?? '—'}
           </p>
-          <p className="mt-1 text-muted-foreground">{evaluation.workTable?.descripcion}</p>
-          <p className="mt-3 text-sm">{evaluation.workTable?.justification}</p>
+          {evaluation.workTable?.descripcion ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {evaluation.workTable.descripcion}
+            </p>
+          ) : null}
+          {evaluation.workTable?.justification ? (
+            <div className="mt-3 border-t border-border/60 pt-3">
+              <EvaluationProse content={evaluation.workTable.justification} />
+            </div>
+          ) : null}
         </SectionCard>
       </div>
 
       {bc ? (
         <>
           <SectionCard title="Business Case · Resumen ejecutivo" delay={0.26}>
-            <p>{bc.resumenEjecutivo}</p>
+            <EvaluationProse content={bc.resumenEjecutivo} />
           </SectionCard>
           <SectionCard title="Objetivos de negocio" delay={0.28}>
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1.5 pl-5">
               {bc.objetivosNegocio.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           </SectionCard>
           <SectionCard title="Beneficios estimados" delay={0.3}>
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1.5 pl-5">
               {bc.beneficiosEstimados.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           </SectionCard>
           <SectionCard title="Riesgos principales" delay={0.32}>
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1.5 pl-5">
               {bc.riesgosPrincipales.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           </SectionCard>
           <SectionCard title="KPIs sugeridos" delay={0.34}>
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1.5 pl-5">
               {bc.kpisSugeridos.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           </SectionCard>
           <SectionCard title="Recomendación final" delay={0.36}>
-            <p>{bc.recomendacionFinal}</p>
+            <EvaluationProse content={bc.recomendacionFinal} />
           </SectionCard>
         </>
       ) : null}
@@ -160,7 +173,9 @@ export function EvaluationResultPanel({
       <SectionCard title="Evidencias utilizadas" delay={0.38}>
         <div className="space-y-3">
           <div>
-            <p className="mb-1 text-xs uppercase text-muted-foreground">Empresas</p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+              Empresas
+            </p>
             <ul className="space-y-1">
               {(evaluation.initiative?.companyContacts ?? []).map((contact) => (
                 <li key={`${contact.empresa}-${contact.contacto}`}>
@@ -170,7 +185,9 @@ export function EvaluationResultPanel({
             </ul>
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase text-muted-foreground">Archivos</p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+              Archivos
+            </p>
             <ul className="space-y-1">
               {(evaluation.initiative?.attachments ?? []).map((file) => (
                 <li key={file.id}>
@@ -178,7 +195,7 @@ export function EvaluationResultPanel({
                     href={file.secureUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    className="inline-flex cursor-pointer items-center gap-1 text-primary hover:underline"
                   >
                     <FileText className="size-3.5" />
                     {file.originalName}
@@ -189,8 +206,10 @@ export function EvaluationResultPanel({
           </div>
           {evaluation.initiative?.necesidad ? (
             <div>
-              <p className="mb-1 text-xs uppercase text-muted-foreground">Información inicial</p>
-              <p>{evaluation.initiative.necesidad}</p>
+              <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                Información inicial
+              </p>
+              <EvaluationProse content={evaluation.initiative.necesidad} />
             </div>
           ) : null}
         </div>
