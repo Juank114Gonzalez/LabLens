@@ -85,7 +85,7 @@ Vuelve al **Dashboard**. Señala tres cosas y termina:
 
 ## Preguntas probables y respuesta corta
 
-**¿Por qué Gemini y no Bedrock?** El consumo del modelo está aislado en un módulo con dos funciones. El diagrama de arquitectura muestra el reemplazo; el MVP usó lo que permitía iterar dentro del plazo de dos semanas.
+**¿Por qué la API de Anthropic y no Bedrock?** Es el mismo modelo. Bedrock lo sirve a través de AWS; nosotros lo consumimos directo para iterar más rápido dentro del plazo. El cambio es el cliente del SDK —`AnthropicBedrockMantle` en lugar de `Anthropic`— y el prefijo `anthropic.` en el id del modelo. Nada del código que lo usa cambia.
 
 **¿Y si el modelo se equivoca en la clasificación?** La vista de auditoría lista todo lo enrutado fuera del Lab con su justificación y confianza, filtrable por canal y fecha. Es el instrumento para medir el 95% y para reclasificar a mano.
 

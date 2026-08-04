@@ -22,7 +22,7 @@ Los detalles de diseño están en [`docs/`](./docs).
 
 ```text
 LabLens/
-├── backend/     # API Express + triage y pipeline sobre Gemini
+├── backend/     # API Express + triage y pipeline sobre Claude
 ├── frontend/    # App Next.js (formulario público + back-office del Lab)
 ├── docs/        # Entregables del reto
 └── README.md    # Este archivo
@@ -43,7 +43,7 @@ Cada carpeta tiene su propio `README` con detalle de arquitectura, scripts y var
 ### Backend
 
 - Node.js · Express · TypeScript · pnpm
-- Google Gemini (`@google/genai`) con **tools / function calling**
+- Anthropic Claude (`@anthropic-ai/sdk`) con **tool use** y thinking adaptativo
 - PostgreSQL (Neon) · Prisma
 - Zod · dotenv
 
@@ -82,7 +82,7 @@ El target serverless en AWS (Bedrock, Step Functions, Lambda, DynamoDB, S3, Cogn
 
 - Node.js ≥ 20
 - pnpm
-- Cuenta Gemini (API key)
+- Cuenta Anthropic (API key)
 - Base PostgreSQL (Neon u otra compatible)
 
 ---
@@ -95,7 +95,7 @@ El target serverless en AWS (Bedrock, Step Functions, Lambda, DynamoDB, S3, Cogn
 cd backend
 pnpm install
 cp .env.example .env
-# Completa GEMINI_API_KEY, DATABASE_URL y FRONTEND_ORIGIN
+# Completa ANTHROPIC_API_KEY, DATABASE_URL y FRONTEND_ORIGIN
 # SMTP_* es opcional: sin él el triage enruta igual, solo omite el correo
 pnpm prisma:migrate
 pnpm prisma:seed
@@ -115,7 +115,7 @@ API en [http://localhost:3001](http://localhost:3001)
 - No uses `corepack enable` (falla con `EROFS`).
 - El prefijo `backend/ $` en la UI de Render **no** se escribe en el comando; solo indica el directorio.
 
-Variables: `GEMINI_API_KEY`, `GEMINI_MODEL`, `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN` (URL de Vercel).
+Variables: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `NODE_ENV=production`, `DATABASE_URL`, `FRONTEND_ORIGIN` (URL de Vercel).
 
 ### 2. Frontend
 

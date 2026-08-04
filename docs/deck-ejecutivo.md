@@ -93,7 +93,7 @@ La vista de auditoría permite revisar lo que el triage sacó del Lab y medir su
 
 Bedrock · Step Functions · Lambda + API Gateway · DynamoDB · S3 · Cognito · SES · QuickSight.
 
-El MVP demostrado corre sobre un stack equivalente (Gemini / PostgreSQL / Cloudinary / Express) por agilidad dentro del plazo; el consumo del modelo, el almacenamiento y la identidad están aislados en un módulo cada uno, de modo que la migración cambia adaptadores, no lógica.
+El MVP ya corre sobre **Anthropic Claude**, el mismo modelo que expone Bedrock: migrar a Bedrock es cambiar el cliente del SDK, no el código que lo usa. El almacenamiento y la identidad están aislados en un módulo cada uno, de modo que el resto de la migración también cambia adaptadores, no lógica.
 
 ---
 

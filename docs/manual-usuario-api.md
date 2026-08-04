@@ -133,7 +133,8 @@ Backend (`backend/.env`, ver `.env.example`):
 | Variable | Obligatoria | Nota |
 | --- | --- | --- |
 | `DATABASE_URL` | Sí | PostgreSQL (Neon) |
-| `GEMINI_API_KEY` | Sí | Proveedor del MVP |
+| `ANTHROPIC_API_KEY` | Sí | Claude (triage y pipeline) |
+| `ANTHROPIC_MODEL` | No | Por defecto `claude-opus-5` |
 | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Sí | Mínimo 16 caracteres |
 | `CLOUDINARY_*` | Sí | Adjuntos |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | No | Sin SMTP el triage enruta igual, solo se omite el correo |

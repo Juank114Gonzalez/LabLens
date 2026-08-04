@@ -87,7 +87,7 @@ function scoreFromHits(hits: number, base: number, step: number, maxBonus: numbe
 }
 
 /**
- * Deterministic Fit engine. Replaceable later without touching tools/Gemini.
+ * Deterministic Fit engine. Replaceable later without touching tools or the model.
  */
 export function calculateFitScore(description: string): FitResult {
   const impact = scoreFromHits(countHits(description, IMPACT_KEYWORDS), 55, 8, 40);

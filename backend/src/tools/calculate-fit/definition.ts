@@ -1,10 +1,10 @@
-import type { FunctionDeclaration } from '@google/genai';
+import type { ToolDeclaration } from '../../types/tools.types.js';
 
-export const calculateFitDeclaration: FunctionDeclaration = {
+export const calculateFitDeclaration: ToolDeclaration = {
   name: 'calculateFit',
   description:
     'Calcula el Fit (0-100) con un motor determinístico del backend. Nunca inventes este número: siempre llama esta herramienta cuando vayas a hablar de Fit. Úsala solo si hay información suficiente de la iniciativa.',
-  parametersJsonSchema: {
+  inputSchema: {
     type: 'object',
     properties: {
       initiativeDescription: {

@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { findInitiativeById } from '../../repositories/domain-initiative.repository.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
 import { AppError } from '../../utils/AppError.js';
@@ -9,8 +8,8 @@ export const getInitiativeTool: ToolDefinition = {
     name: 'getInitiative',
     description:
       'Obtiene la información completa de la iniciativa en evaluación: formulario, contactos y evidencias.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {},
     },
   },

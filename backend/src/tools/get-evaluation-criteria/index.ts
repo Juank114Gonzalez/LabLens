@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { listCriteria } from '../../repositories/criteria.repository.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
 
@@ -8,8 +7,8 @@ export const getEvaluationCriteriaTool: ToolDefinition = {
     name: 'getEvaluationCriteria',
     description:
       'Obtiene los criterios de evaluación activos con peso, descripción y promptContext. Úsalos para puntuar la iniciativa.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {},
     },
   },

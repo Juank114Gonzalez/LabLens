@@ -2,13 +2,13 @@
 
 Agente conversacional del Innovation Lab de ACH.
 
-Gemini **no** calcula el Fit ni inventa conocimiento: decide qué herramientas usar,
+El modelo **no** calcula el Fit ni inventa conocimiento: decide qué herramientas usar,
 interpreta resultados y redacta respuestas profesionales.
 
 ## Arquitectura de herramientas
 
 ```text
-Usuario → ChatService → AgentService (Gemini + tools) → respuesta
+Usuario → ChatService → AgentService (Claude + tools) → respuesta
 ```
 
 | Tool | Responsabilidad |
@@ -16,7 +16,7 @@ Usuario → ChatService → AgentService (Gemini + tools) → respuesta
 | `searchKnowledge` | Lee `knowledge/*.md` (futuro: RAG/pgvector) |
 | `findSimilarInitiatives` | Keywords sobre `mock/iniciativas.json` |
 | `calculateFit` | Motor determinístico (`fit.service`) |
-| `generateExecutiveSummary` | Resumen ejecutivo vía Gemini acotado |
+| `generateExecutiveSummary` | Resumen ejecutivo vía el modelo, acotado |
 
 El system prompt vive en `src/prompts/system.md`.
 
