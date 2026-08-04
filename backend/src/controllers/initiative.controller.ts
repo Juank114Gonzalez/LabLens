@@ -3,6 +3,7 @@ import {
   createDraftInitiative,
   deleteInitiativeForActor,
   getInitiativeForActor,
+  getInitiativeStatsForActor,
   listInitiativesForActor,
   registerInitiativeForActor,
   startEvaluation,
@@ -10,6 +11,7 @@ import {
 } from '../services/initiative.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
+import { initiativeFiltersSchema } from '../validators/initiative.validator.js';
 import type {
   CreateInitiativeDto,
   InitiativeIdParamsDto,
@@ -27,7 +29,14 @@ function requireUser(req: Request) {
 
 export async function listInitiativesController(req: Request, res: Response) {
   const user = requireUser(req);
-  sendSuccess(res, await listInitiativesForActor(user));
+  // Parsed here rather than in middleware: Express 5 exposes req.query as a getter.
+  const filters = initiativeFiltersSchema.parse(req.query ?? {});
+  sendSuccess(res, await listInitiativesForActor(user, filters));
+}
+
+export async function getInitiativeStatsController(req: Request, res: Response) {
+  const user = requireUser(req);
+  sendSuccess(res, await getInitiativeStatsForActor(user));
 }
 
 export async function createInitiativeController(req: Request, res: Response) {
