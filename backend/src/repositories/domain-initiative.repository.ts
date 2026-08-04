@@ -95,6 +95,31 @@ export async function updateInitiative(
   });
 }
 
+export async function applyTriageResult(
+  id: string,
+  data: {
+    status: InitiativeStatus;
+    triageClassificationId: string;
+    triageWorkTableId: string;
+    triageReasoning: string;
+    triageConfidence: number;
+    triagedAt: Date;
+  },
+) {
+  return prisma.initiative.update({
+    where: { id },
+    data,
+    include: initiativeInclude,
+  });
+}
+
+export async function markNotificationSent(id: string, sentAt: Date) {
+  await prisma.initiative.update({
+    where: { id },
+    data: { notificationSentAt: sentAt },
+  });
+}
+
 export async function replaceCompanyContacts(
   initiativeId: string,
   contacts: Array<{
