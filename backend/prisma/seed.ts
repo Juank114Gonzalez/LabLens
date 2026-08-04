@@ -1,5 +1,11 @@
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { config as loadDotenv } from 'dotenv';
+
+// `prisma db seed` loads .env before running this file, but `tsx prisma/seed.ts`
+// does not. Loading it here keeps both entry points working; on Render the vars
+// already live in the environment and dotenv finds nothing to override.
+loadDotenv();
 
 const prisma = new PrismaClient();
 
