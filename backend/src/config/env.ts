@@ -3,6 +3,17 @@ import { z } from 'zod';
 
 loadDotenv();
 
+/**
+ * dotenv turns `KEY=` into an empty string, which a plain `.optional()` would
+ * reject. Treat blank as "not configured" so a commented-out block in .env
+ * behaves the same as a missing key.
+ */
+const optionalText = () =>
+  z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().min(1).optional(),
+  );
+
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -24,10 +35,10 @@ const envSchema = z.object({
   CLOUDINARY_FOLDER: z.string().min(1).default('lablens'),
   // SMTP is optional: without it the triage still runs and the routing is recorded,
   // only the outbound notification to the work table is skipped.
-  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_HOST: optionalText(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_USER: z.string().min(1).optional(),
-  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_USER: optionalText(),
+  SMTP_PASS: optionalText(),
   SMTP_FROM: z.string().min(1).default('LabLens <no-reply@lablens.local>'),
   PUBLIC_SUBMISSION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
 });
