@@ -51,6 +51,8 @@ export function DashboardView() {
     total: items.length,
     DRAFT: items.filter((i) => i.status === 'DRAFT').length,
     REGISTERED: 0,
+    TRIAGED_LAB: 0,
+    TRIAGED_EXTERNAL: 0,
     UNDER_REVIEW: 0,
     EVALUATED: 0,
     APPROVED: 0,
