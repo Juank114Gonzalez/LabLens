@@ -8,6 +8,8 @@ const initiativeInclude = {
   user: {
     select: { id: true, name: true, email: true },
   },
+  triageClassification: { select: { id: true, nombre: true } },
+  triageWorkTable: { select: { id: true, nombre: true, notificationEmail: true } },
   evaluations: {
     orderBy: { createdAt: 'desc' as const },
     include: {
@@ -18,9 +20,14 @@ const initiativeInclude = {
   },
 } satisfies Prisma.InitiativeInclude;
 
+type InitiativeScalarCreateInput = Omit<
+  Prisma.InitiativeUncheckedCreateInput,
+  'id' | 'userId' | 'companyContacts' | 'attachments' | 'evaluations'
+>;
+
 export async function createInitiative(input: {
-  userId: string;
-  data?: Prisma.InitiativeCreateWithoutUserInput;
+  userId?: string | null;
+  data?: InitiativeScalarCreateInput;
   companyContacts?: Array<{
     empresa: string;
     contacto: string;
@@ -32,7 +39,7 @@ export async function createInitiative(input: {
   return prisma.initiative.create({
     data: {
       ...input.data,
-      userId: input.userId,
+      userId: input.userId ?? null,
       status: input.data?.status ?? InitiativeStatus.DRAFT,
       companyContacts: input.companyContacts?.length
         ? { create: input.companyContacts }
