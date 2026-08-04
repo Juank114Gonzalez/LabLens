@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,17 @@ import { submitPublicInitiative } from '@/features/submit/services/submit.servic
 import type { PublicSubmissionResult, SourceType } from '@/features/submit/types';
 
 type Props = {
-  sourceType: SourceType;
-  onBack: () => void;
+  /** Preselected by `?source=` on the URL; still editable in the form. */
+  defaultSourceType: SourceType;
   onSubmitted: (result: PublicSubmissionResult) => void;
+};
+
+/** Shown under the channel field so the choice explains itself without a step. */
+const SOURCE_HINTS: Record<SourceType, string> = {
+  INTERNAL: 'Operaciones, Negocio, Riesgos, TI o Canales Digitales enviando una necesidad propia.',
+  EXTERNAL_CONTRACTOR: 'Proveedores, aliados o contractors con acceso al Laboratorio Digital.',
+  INTERNATIONAL_REFERENCE:
+    'Un benchmark visto en un congreso, simposio o publicación que vale la pena replicar.',
 };
 
 function defaultValues(sourceType: SourceType): PublicInitiativeFormValues {
@@ -54,15 +62,19 @@ function defaultValues(sourceType: SourceType): PublicInitiativeFormValues {
   };
 }
 
-export function PublicInitiativeForm({ sourceType, onBack, onSubmitted }: Props) {
+export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const isReference = sourceType === 'INTERNATIONAL_REFERENCE';
 
   const form = useForm<PublicInitiativeFormValues>({
     resolver: zodResolver(publicInitiativeFormSchema) as never,
-    defaultValues: defaultValues(sourceType),
+    defaultValues: defaultValues(defaultSourceType),
     mode: 'onBlur',
   });
+
+  // Watched, not read from props: the reference block appears the moment the
+  // channel changes, without remounting the form and losing what was typed.
+  const sourceType = form.watch('sourceType');
+  const isReference = sourceType === 'INTERNATIONAL_REFERENCE';
 
   const contacts = useFieldArray({ control: form.control, name: 'companyContacts' });
   const errors = form.formState.errors;
@@ -93,17 +105,12 @@ export function PublicInitiativeForm({ sourceType, onBack, onSubmitted }: Props)
         toast.error('Revisa los campos obligatorios antes de enviar'),
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Canal seleccionado
-          </p>
-          <p className="font-heading text-lg font-medium">{SOURCE_LABELS[sourceType]}</p>
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="size-4" />
-          Cambiar canal
-        </Button>
+      <div className="space-y-1">
+        <h1 className="font-heading text-2xl font-semibold">Envía tu iniciativa</h1>
+        <p className="text-sm text-muted-foreground">
+          El Comité Virtual la analiza y te dice a qué mesa de trabajo corresponde. No necesitas
+          crear una cuenta.
+        </p>
       </div>
 
       <Card className="border-border/70 shadow-none">
@@ -111,6 +118,18 @@ export function PublicInitiativeForm({ sourceType, onBack, onSubmitted }: Props)
           <CardTitle>Quién envía</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Field label="Canal de origen" error={errors.sourceType?.message}>
+              <select className={selectClassName} {...form.register('sourceType')}>
+                {(Object.keys(SOURCE_LABELS) as SourceType[]).map((source) => (
+                  <option key={source} value={source}>
+                    {SOURCE_LABELS[source]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">{SOURCE_HINTS[sourceType]}</p>
+            </Field>
+          </div>
           <Field label="Tu nombre" error={errors.submitterName?.message}>
             <Input {...form.register('submitterName')} />
           </Field>

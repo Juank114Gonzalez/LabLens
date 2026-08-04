@@ -48,7 +48,7 @@ Dos caminos, no uno:
 - Organizaciones externas y contractors.
 - **Referencias internacionales** — lo que el equipo ve en un congreso o benchmark y quiere replicar. Un canal que el enunciado no pedía y que convierte al Lab en receptor activo de señales del mercado.
 
-*Visual:* captura de `/submit` con las tres tarjetas de canal.
+*Visual:* captura de `/submit` con el desplegable de canal abierto sobre el formulario.
 
 ---
 
