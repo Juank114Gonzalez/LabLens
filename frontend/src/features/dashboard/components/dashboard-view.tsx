@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Download, Eye, FileStack } from 'lucide-react';
-import { toast } from 'sonner';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,83 +17,34 @@ import {
 } from '@/components/ui/table';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
-import { canAccessAdmin, canManageInitiatives } from '@/features/auth/lib/roles';
-import {
-  downloadEvidencesZip,
-  listInitiatives,
-} from '@/features/initiative/services/initiative.service';
-import { INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
-import type { InitiativeStatus } from '@/features/initiative/types';
+import { MagnitudeBars } from '@/features/dashboard/components/charts/magnitude-bars';
+import { ShareBar } from '@/features/dashboard/components/charts/share-bar';
+import { StatTile } from '@/features/dashboard/components/charts/stat-tile';
+import { TrendLines } from '@/features/dashboard/components/charts/trend-lines';
+import { colorForClassification } from '@/features/dashboard/lib/viz';
+import { getInitiativeStats } from '@/features/dashboard/services/stats.service';
+import { SOURCE_LABELS } from '@/features/initiative/lib/status';
+import { listInitiatives } from '@/features/initiative/services/initiative.service';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
 import { useAuthStore } from '@/stores/auth.store';
 
-const STAT_KEYS: InitiativeStatus[] = [
-  'REGISTERED',
-  'UNDER_REVIEW',
-  'EVALUATED',
-  'APPROVED',
-  'REJECTED',
-];
-
 export function DashboardView() {
   const user = useAuthStore((state) => state.user);
-  const role = user?.role;
-  const query = useQuery({
-    queryKey: ['initiatives'],
-    queryFn: listInitiatives,
-    enabled: Boolean(role && (canManageInitiatives(role) || role === 'EVALUATOR')),
+
+  const stats = useQuery({
+    queryKey: ['initiative-stats'],
+    queryFn: getInitiativeStats,
   });
 
-  const items = query.data ?? [];
-  const counts: Record<'total' | InitiativeStatus, number> = {
-    total: items.length,
-    DRAFT: items.filter((i) => i.status === 'DRAFT').length,
-    REGISTERED: 0,
-    UNDER_REVIEW: 0,
-    EVALUATED: 0,
-    APPROVED: 0,
-    REJECTED: 0,
-    ARCHIVED: 0,
-  };
-  for (const key of STAT_KEYS) {
-    counts[key] = items.filter((i) => i.status === key).length;
-  }
+  const inbox = useQuery({
+    queryKey: ['initiatives', { status: ['TRIAGED_LAB'] }],
+    queryFn: () => listInitiatives({ status: ['TRIAGED_LAB'] }),
+  });
 
-  if (role && canAccessAdmin(role)) {
-    return (
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 sm:p-8">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold">Administración LabLens</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gestiona usuarios, criterios, clasificaciones y mesas de trabajo.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { href: routes.adminUsers, title: 'Usuarios' },
-            { href: routes.adminCriteria, title: 'Criterios' },
-            { href: routes.adminClassifications, title: 'Clasificaciones' },
-            { href: routes.adminWorkTables, title: 'Mesas de trabajo' },
-          ].map((card) => (
-            <Card key={card.href} className="border-border/70 bg-card/60 shadow-none">
-              <CardHeader>
-                <CardTitle className="font-heading text-lg">{card.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button asChild variant="outline">
-                  <Link href={card.href}>
-                    Abrir
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const data = stats.data;
+  const delta = data ? data.currentWindow - data.previousWindow : 0;
+  const inboxItems = (inbox.data ?? []).slice(0, 5);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 sm:p-8">
@@ -103,133 +53,146 @@ export function DashboardView() {
           {branding.organization}
         </p>
         <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          Hola {user?.name?.split(' ')[0] ?? 'innovador'}
+          Hola {user?.name?.split(' ')[0] ?? 'evaluador'}
         </h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Registra iniciativas de negocio y consulta su estado y evaluaciones.
+          Estado del portafolio de iniciativas: qué llega, cómo se está clasificando y qué
+          espera evaluación en el Laboratorio.
         </p>
-        {role && canManageInitiatives(role) ? (
-          <Button asChild className="mt-4 rounded-xl" size="lg">
-            <Link href={routes.initiativeNew}>
-              Nueva iniciativa
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-        ) : null}
+        <Button asChild className="mt-4 rounded-xl" size="lg">
+          <Link href={routes.inbox}>
+            Ir a la bandeja del Lab
+            <ArrowRight className="size-4" />
+          </Link>
+        </Button>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {[
-          { label: 'Total', value: counts.total },
-          { label: 'Registradas', value: counts.REGISTERED },
-          { label: 'En evaluación', value: counts.UNDER_REVIEW },
-          { label: 'Evaluadas', value: counts.EVALUATED },
-          { label: 'Aprobadas', value: counts.APPROVED },
-          { label: 'Rechazadas', value: counts.REJECTED },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-border/70 bg-card/60 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-heading text-2xl font-semibold">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {stats.isLoading || !data ? (
+        <Skeleton className="h-24 w-full" />
+      ) : (
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile label="Iniciativas recibidas" value={data.total} hint="Histórico completo" />
+          <StatTile
+            label={`Últimos ${data.windowDays} días`}
+            value={data.currentWindow}
+            delta={{ value: delta, period: `vs. ${data.windowDays} días previos` }}
+          />
+          <StatTile
+            label="En bandeja del Lab"
+            value={data.labInboxPending}
+            hint="Esperando evaluación completa"
+          />
+          <StatTile
+            label="Clasificadas por el triage"
+            value={data.byClassification.reduce((sum, item) => sum + item.count, 0)}
+            hint="Con categoría asignada automáticamente"
+          />
+        </section>
+      )}
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-border/70 bg-card/60 shadow-none">
+          <CardHeader>
+            <CardTitle className="font-heading text-lg">Distribución por clasificación</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.isLoading || !data ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (
+              <ShareBar
+                segments={data.byClassification.map((item) => ({
+                  key: item.id,
+                  label: item.nombre,
+                  value: item.count,
+                  color: colorForClassification(item.nombre),
+                }))}
+                emptyLabel="Todavía ninguna iniciativa pasó por el triage."
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card/60 shadow-none">
+          <CardHeader>
+            <CardTitle className="font-heading text-lg">Canal de origen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.isLoading || !data ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (
+              <MagnitudeBars
+                bars={data.bySource.map((item) => ({
+                  key: item.sourceType,
+                  label: SOURCE_LABELS[item.sourceType],
+                  value: item.count,
+                }))}
+              />
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <Card className="border-border/70 bg-card/60 shadow-none">
+        <CardHeader>
+          <CardTitle className="font-heading text-lg">
+            Iniciativas recibidas por día
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {stats.isLoading || !data ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <TrendLines points={data.timeline} />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 bg-card/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="font-heading text-lg">Mis iniciativas</CardTitle>
+          <CardTitle className="font-heading text-lg">Últimas en la bandeja del Lab</CardTitle>
           <Button asChild variant="outline" size="sm">
-            <Link href={routes.initiatives}>Ver todas</Link>
+            <Link href={routes.inbox}>Ver bandeja</Link>
           </Button>
         </CardHeader>
         <CardContent>
-          {query.isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : items.length === 0 ? (
+          {inbox.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : inboxItems.length === 0 ? (
             <EmptyState
-              title="Sin iniciativas"
-              description="Crea tu primera iniciativa para comenzar."
-              action={
-                <Button asChild>
-                  <Link href={routes.initiativeNew}>Nueva iniciativa</Link>
-                </Button>
-              }
+              title="Bandeja vacía"
+              description="No hay iniciativas disruptivas o adyacentes esperando evaluación."
             />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Área impactada</TableHead>
-                  <TableHead>Urgencia</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Última evaluación</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead>Clasificación</TableHead>
+                  <TableHead>Canal</TableHead>
+                  <TableHead>Triage</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.slice(0, 10).map((item) => {
-                  const lastEval = item.evaluations?.[0];
-                  return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        {item.nombre || 'Sin nombre'}
-                      </TableCell>
-                      <TableCell>{item.areaProcesoImpactado || '—'}</TableCell>
-                      <TableCell>{item.urgencia || '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {INITIATIVE_STATUS_LABELS[item.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatShortDate(item.createdAt)}</TableCell>
-                      <TableCell>
-                        {lastEval
-                          ? formatShortDate(lastEval.evaluatedAt ?? lastEval.createdAt)
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          <Button asChild size="icon-sm" variant="ghost">
-                            <Link href={routes.initiative(item.id)} title="Ver detalle">
-                              <Eye className="size-3.5" />
-                            </Link>
-                          </Button>
-                          <Button asChild size="icon-sm" variant="ghost">
-                            <Link
-                              href={routes.initiativeEvaluations(item.id)}
-                              title="Ver evaluaciones"
-                            >
-                              <FileStack className="size-3.5" />
-                            </Link>
-                          </Button>
-                          <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            title="Descargar evidencias"
-                            onClick={() => {
-                              void downloadEvidencesZip(item.id).catch((error: Error) =>
-                                toast.error(error.message),
-                              );
-                            }}
-                          >
-                            <Download className="size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {inboxItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.nombre || 'Sin nombre'}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {item.triageClassification?.nombre ?? 'Sin clasificar'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{SOURCE_LABELS[item.sourceType]}</TableCell>
+                    <TableCell>
+                      {item.triagedAt ? formatShortDate(item.triagedAt) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={routes.initiative(item.id)}>Evaluar</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

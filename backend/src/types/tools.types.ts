@@ -1,4 +1,3 @@
-import type { FunctionDeclaration } from '@google/genai';
 import type { FitResult } from './fit.types.js';
 import type { SimilarInitiative } from './initiative.types.js';
 import type { BusinessCase, EvaluationReadiness } from './evaluation-domain.types.js';
@@ -25,9 +24,25 @@ export type ToolContext = {
   userId: string;
 };
 
+/**
+ * Provider-neutral tool shape: plain JSON Schema, no SDK types. Keeps the tool
+ * catalog independent of whichever model provider the agent runs on.
+ */
+export type ToolInputSchema = {
+  type: 'object';
+  properties: Record<string, unknown>;
+  required?: string[];
+};
+
+export type ToolDeclaration = {
+  name: string;
+  description: string;
+  inputSchema: ToolInputSchema;
+};
+
 export type ToolDefinition = {
   name: ToolName;
-  declaration: FunctionDeclaration;
+  declaration: ToolDeclaration;
   execute: (args: Record<string, unknown>, context: ToolContext) => Promise<unknown>;
 };
 

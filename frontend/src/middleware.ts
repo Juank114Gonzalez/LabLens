@@ -18,6 +18,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/inbox/:path*',
     '/chat/:path*',
     '/evaluations/:path*',
     '/admin/:path*',

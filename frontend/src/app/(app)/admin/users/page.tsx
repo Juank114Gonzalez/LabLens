@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  createUser,
   deleteUser,
   listUsers,
   resetPassword,
@@ -29,14 +30,30 @@ import type { UserRole } from '@/types/auth';
 import { formatShortDate } from '@/shared/lib/dates';
 import { useAuthStore } from '@/stores/auth.store';
 
-const ROLES: UserRole[] = ['GENERATOR', 'EVALUATOR', 'ADMIN'];
+const ROLES: UserRole[] = ['EVALUATOR', 'ADMIN'];
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'EVALUATOR' as UserRole,
+  });
   const query = useQuery({ queryKey: ['admin-users'], queryFn: listUsers });
+
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      toast.success('Usuario creado');
+      setNewUser({ name: '', email: '', password: '', role: 'EVALUATOR' });
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const filtered = useMemo(() => {
     const items = query.data ?? [];
@@ -84,8 +101,54 @@ export default function AdminUsersPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
         <h1 className="font-heading text-3xl font-semibold">Usuarios</h1>
-        <p className="text-sm text-muted-foreground">Administra roles, acceso y eliminaciones.</p>
+        <p className="text-sm text-muted-foreground">
+          No hay registro público: las cuentas de evaluador se crean aquí.
+        </p>
       </div>
+
+      <form
+        className="grid gap-3 rounded-2xl border border-border/70 p-4 sm:grid-cols-2 lg:grid-cols-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          createMutation.mutate(newUser);
+        }}
+      >
+        <Input
+          placeholder="Nombre"
+          value={newUser.name}
+          onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+          required
+        />
+        <Input
+          type="email"
+          placeholder="Correo"
+          value={newUser.email}
+          onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="Contraseña (mín. 6)"
+          value={newUser.password}
+          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+          minLength={6}
+          required
+        />
+        <select
+          className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm"
+          value={newUser.role}
+          onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+        >
+          {ROLES.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+        <Button type="submit" disabled={createMutation.isPending}>
+          {createMutation.isPending ? 'Creando…' : 'Crear usuario'}
+        </Button>
+      </form>
 
       <div className="flex flex-wrap gap-3">
         <Input

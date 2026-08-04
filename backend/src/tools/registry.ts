@@ -1,7 +1,7 @@
-import type { FunctionDeclaration } from '@google/genai';
 import type {
   ToolArtifacts,
   ToolContext,
+  ToolDeclaration,
   ToolDefinition,
   ToolName,
 } from '../types/tools.types.js';
@@ -33,7 +33,7 @@ const toolsByName = new Map<ToolName, ToolDefinition>(
   interviewTools.map((tool) => [tool.name, tool]),
 );
 
-export function getToolDeclarations(mode: AgentToolMode = 'interview'): FunctionDeclaration[] {
+export function getToolDeclarations(mode: AgentToolMode = 'interview'): ToolDeclaration[] {
   if (mode === 'interview') {
     return interviewTools.map((tool) => tool.declaration);
   }

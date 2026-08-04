@@ -8,7 +8,6 @@ datasource db {
 }
 
 enum Role {
-  GENERATOR
   EVALUATOR
   ADMIN
 }
@@ -16,11 +15,19 @@ enum Role {
 enum InitiativeStatus {
   DRAFT
   REGISTERED
+  TRIAGED_LAB
+  TRIAGED_EXTERNAL
   UNDER_REVIEW
   EVALUATED
   APPROVED
   REJECTED
   ARCHIVED
+}
+
+enum SourceType {
+  INTERNAL
+  EXTERNAL_CONTRACTOR
+  INTERNATIONAL_REFERENCE
 }
 
 enum EvaluationStatus {
@@ -47,7 +54,7 @@ model User {
   name          String
   email         String         @unique
   passwordHash  String
-  role          Role           @default(GENERATOR)
+  role          Role           @default(EVALUATOR)
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -71,8 +78,9 @@ model RefreshToken {
 
 model Initiative {
   id                   String           @id @default(uuid()) @db.Uuid
-  userId               String           @db.Uuid
+  userId               String?          @db.Uuid
   status                InitiativeStatus @default(DRAFT)
+  sourceType            SourceType       @default(INTERNAL)
   diligenciadoPor       String           @default("")
   fechaDiligenciamiento DateTime         @default(now())
   expectativaSolucion   String           @default("")
@@ -85,15 +93,39 @@ model Initiative {
   porQueAhora           String           @default("")
   paraQue               String           @default("")
   comoSeResuelveHoy     String           @default("")
+
+  // Solo para sourceType = INTERNATIONAL_REFERENCE
+  referenceOrganization String?
+  referenceEvent        String?
+  referenceLink         String?
+  referenceRationale    String?
+
+  // Contacto del submisor cuando la iniciativa llega por el canal público (userId nulo)
+  submitterName  String?
+  submitterEmail String?
+
+  // Triage rápido: una sola pasada del LLM, independiente del pipeline de evaluación
+  triageClassificationId String?   @db.Uuid
+  triageWorkTableId      String?   @db.Uuid
+  triageReasoning        String?
+  triageConfidence       Float?
+  triagedAt              DateTime?
+  notificationSentAt     DateTime?
+
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
-  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  triageClassification IntelligentClassification? @relation("InitiativeTriageClassification", fields: [triageClassificationId], references: [id], onDelete: SetNull)
+  triageWorkTable      WorkTable?       @relation("InitiativeTriageWorkTable", fields: [triageWorkTableId], references: [id], onDelete: SetNull)
   companyContacts      CompanyContact[]
   attachments          Attachment[]
   evaluations          Evaluation[]
 
   @@index([userId, updatedAt])
   @@index([status])
+  @@index([sourceType])
+  @@index([triageClassificationId])
+  @@index([triagedAt])
 }
 
 model CompanyContact {
@@ -201,27 +233,30 @@ model EvaluationCriteria {
 }
 
 model IntelligentClassification {
-  id            String       @id @default(uuid()) @db.Uuid
-  nombre        String       @unique
-  descripcion   String
-  promptContext String
-  activo        Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  evaluations   Evaluation[]
+  id                 String       @id @default(uuid()) @db.Uuid
+  nombre             String       @unique
+  descripcion        String
+  promptContext      String
+  activo             Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  evaluations        Evaluation[]
+  triagedInitiatives Initiative[] @relation("InitiativeTriageClassification")
 
   @@index([activo])
 }
 
 model WorkTable {
-  id            String       @id @default(uuid()) @db.Uuid
-  nombre        String       @unique
-  descripcion   String
-  promptContext String
-  activo        Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  evaluations   Evaluation[]
+  id                 String       @id @default(uuid()) @db.Uuid
+  nombre             String       @unique
+  descripcion        String
+  promptContext      String
+  notificationEmail  String?
+  activo             Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  evaluations        Evaluation[]
+  triagedInitiatives Initiative[] @relation("InitiativeTriageWorkTable")
 
   @@index([activo])
 }

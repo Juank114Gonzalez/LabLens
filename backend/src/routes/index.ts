@@ -7,10 +7,14 @@ import { conversationRouter } from './conversation.routes.js';
 import { criteriaRouter } from './criteria.routes.js';
 import { evaluationRouter } from './evaluation.routes.js';
 import { initiativeRouter } from './initiative.routes.js';
+import { publicRouter } from './public.routes.js';
 import { userAdminRouter } from './user-admin.routes.js';
 import { workTableRouter } from './work-table.routes.js';
 
 const apiRouter = Router();
+
+// Unauthenticated intake goes first: nothing below it should ever see these requests.
+apiRouter.use('/public', publicRouter);
 
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', userAdminRouter);

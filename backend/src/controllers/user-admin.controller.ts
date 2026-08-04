@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import {
   changeUserRole,
+  createUserAdmin,
   deleteUserAdmin,
   getUserAdmin,
   listUsersAdmin,
@@ -10,6 +11,7 @@ import {
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
 import type {
+  CreateUserAdminDto,
   UpdateUserAdminDto,
   UpdateUserRoleDto,
   UserIdParamsDto,
@@ -24,6 +26,11 @@ function requireUser(req: Request) {
 
 export async function listUsersController(_req: Request, res: Response) {
   sendSuccess(res, await listUsersAdmin());
+}
+
+export async function createUserController(req: Request, res: Response) {
+  const body = req.body as CreateUserAdminDto;
+  sendSuccess(res, await createUserAdmin(body), 201);
 }
 
 export async function getUserController(req: Request, res: Response) {

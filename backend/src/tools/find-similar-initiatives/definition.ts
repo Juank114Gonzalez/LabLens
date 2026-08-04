@@ -1,10 +1,10 @@
-import type { FunctionDeclaration } from '@google/genai';
+import type { ToolDeclaration } from '../../types/tools.types.js';
 
-export const findSimilarInitiativesDeclaration: FunctionDeclaration = {
+export const findSimilarInitiativesDeclaration: ToolDeclaration = {
   name: 'findSimilarInitiatives',
   description:
     'Busca iniciativas históricas similares (mock JSON). Úsala para contextualizar recomendaciones con casos previos. Máximo 5 resultados.',
-  parametersJsonSchema: {
+  inputSchema: {
     type: 'object',
     properties: {
       description: {

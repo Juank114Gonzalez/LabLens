@@ -3,12 +3,14 @@ import {
   createInitiative,
   deleteInitiative,
   getInitiativeOrThrow,
+  getInitiativeStats,
   listInitiatives,
   replaceCompanyContacts,
   updateInitiative,
 } from '../repositories/domain-initiative.repository.js';
 import type {
   CreateInitiativeDto,
+  InitiativeFiltersDto,
   RegisterInitiativeDto,
   UpdateInitiativeDto,
 } from '../validators/initiative.validator.js';
@@ -43,14 +45,22 @@ export async function createDraftInitiative(
   });
 }
 
-export async function listInitiativesForActor(actor: {
-  id: string;
-  role: Role;
-}) {
+export async function listInitiativesForActor(
+  actor: { id: string; role: Role },
+  filters?: InitiativeFiltersDto,
+) {
   return listInitiatives({
     userId: actor.id,
     isAdmin: canViewAll(actor.role),
+    filters,
   });
+}
+
+export async function getInitiativeStatsForActor(actor: { id: string; role: Role }) {
+  if (!canViewAll(actor.role)) {
+    throw new AppError('Forbidden', 403);
+  }
+  return getInitiativeStats();
 }
 
 export async function getInitiativeForActor(
@@ -72,14 +82,6 @@ export async function updateInitiativeForActor(
     userId: actor.id,
     isAdmin: actor.role === Role.ADMIN,
   });
-
-  if (actor.role === Role.GENERATOR && existing.userId !== actor.id) {
-    throw new AppError('Initiative not found', 404);
-  }
-
-  if (actor.role === Role.EVALUATOR) {
-    throw new AppError('Forbidden', 403);
-  }
 
   assertDraftEditable(existing.status);
 
@@ -104,10 +106,6 @@ export async function registerInitiativeForActor(
     userId: actor.id,
     isAdmin: actor.role === Role.ADMIN,
   });
-
-  if (actor.role === Role.GENERATOR && existing.userId !== actor.id) {
-    throw new AppError('Initiative not found', 404);
-  }
 
   assertDraftEditable(existing.status);
 
@@ -167,7 +165,7 @@ export async function deleteInitiativeForActor(
     throw new AppError('Initiative not found', 404);
   }
 
-  if (actor.role === Role.GENERATOR && existing.status !== InitiativeStatus.DRAFT) {
+  if (actor.role !== Role.ADMIN && existing.status !== InitiativeStatus.DRAFT) {
     throw new AppError('Solo se pueden eliminar borradores', 409);
   }
 

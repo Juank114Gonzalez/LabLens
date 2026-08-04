@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ClipboardList,
-  FilePlus2,
+  Inbox,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -31,7 +31,6 @@ import {
   canAccessAdmin,
   canAccessChat,
   canAccessEvaluations,
-  canManageInitiatives,
 } from '@/features/auth/lib/roles';
 import { Logo } from '@/shared/components/logo';
 import { useUiStore } from '@/stores/ui.store';
@@ -52,14 +51,11 @@ export function ConversationSidebar() {
   const items: NavItem[] = [];
 
   if (role) {
-    items.push({ href: routes.dashboard, label: 'Dashboard', icon: LayoutDashboard });
-
-    if (canManageInitiatives(role)) {
-      items.push(
-        { href: routes.initiatives, label: 'Mis iniciativas', icon: ClipboardList },
-        { href: routes.initiativeNew, label: 'Nueva iniciativa', icon: FilePlus2 },
-      );
-    }
+    items.push(
+      { href: routes.dashboard, label: 'Dashboard', icon: LayoutDashboard },
+      { href: routes.inbox, label: 'Bandeja del Lab', icon: Inbox },
+      { href: routes.initiatives, label: 'Todas las iniciativas', icon: ClipboardList },
+    );
 
     if (canAccessEvaluations(role)) {
       items.push({ href: routes.evaluations, label: 'Evaluaciones', icon: MessageSquare });

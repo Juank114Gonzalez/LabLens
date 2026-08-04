@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { z } from 'zod';
 import { persistEvaluationResult } from '../../services/evaluation-persistence.service.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
@@ -37,36 +36,36 @@ export const saveEvaluationTool: ToolDefinition = {
     name: 'saveEvaluation',
     description:
       'Persiste la evaluación final. El Fit se calcula en backend. Preferir el pipeline de evaluación.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {
         criteriaScores: {
-          type: Type.ARRAY,
+          type: 'array',
           items: {
-            type: Type.OBJECT,
+            type: 'object',
             properties: {
-              criteriaId: { type: Type.STRING },
-              score: { type: Type.NUMBER },
-              justification: { type: Type.STRING },
+              criteriaId: { type: 'string' },
+              score: { type: 'number' },
+              justification: { type: 'string' },
             },
             required: ['criteriaId', 'score', 'justification'],
           },
         },
-        classificationId: { type: Type.STRING },
-        classificationJustification: { type: Type.STRING },
-        workTableId: { type: Type.STRING },
-        workTableJustification: { type: Type.STRING },
-        priority: { type: Type.STRING },
-        priorityJustification: { type: Type.STRING },
+        classificationId: { type: 'string' },
+        classificationJustification: { type: 'string' },
+        workTableId: { type: 'string' },
+        workTableJustification: { type: 'string' },
+        priority: { type: 'string' },
+        priorityJustification: { type: 'string' },
         businessCase: {
-          type: Type.OBJECT,
+          type: 'object',
           properties: {
-            resumenEjecutivo: { type: Type.STRING },
-            objetivosNegocio: { type: Type.ARRAY, items: { type: Type.STRING } },
-            beneficiosEstimados: { type: Type.ARRAY, items: { type: Type.STRING } },
-            riesgosPrincipales: { type: Type.ARRAY, items: { type: Type.STRING } },
-            kpisSugeridos: { type: Type.ARRAY, items: { type: Type.STRING } },
-            recomendacionFinal: { type: Type.STRING },
+            resumenEjecutivo: { type: 'string' },
+            objetivosNegocio: { type: 'array', items: { type: 'string' } },
+            beneficiosEstimados: { type: 'array', items: { type: 'string' } },
+            riesgosPrincipales: { type: 'array', items: { type: 'string' } },
+            kpisSugeridos: { type: 'array', items: { type: 'string' } },
+            recomendacionFinal: { type: 'string' },
           },
           required: [
             'resumenEjecutivo',
@@ -78,8 +77,8 @@ export const saveEvaluationTool: ToolDefinition = {
           ],
         },
         recommendations: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
+          type: 'array',
+          items: { type: 'string' },
         },
       },
       required: [

@@ -1,7 +1,6 @@
-import { Type } from '@google/genai';
 import { z } from 'zod';
 import type { ToolDefinition } from '../../types/tools.types.js';
-import { generatePlainText } from '../../services/gemini.service.js';
+import { generatePlainText } from '../../services/llm.service.js';
 import type { BusinessCase } from '../../types/evaluation-domain.types.js';
 import { AppError } from '../../utils/AppError.js';
 
@@ -20,11 +19,11 @@ export const generateBusinessCaseTool: ToolDefinition = {
     name: 'generateBusinessCase',
     description:
       'Genera un business case ejecutivo breve a partir del contexto de la entrevista y la iniciativa.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {
         context: {
-          type: Type.STRING,
+          type: 'string',
           description: 'Síntesis del contexto conversado y de la iniciativa.',
         },
       },
@@ -56,7 +55,7 @@ ${context}`;
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      throw new AppError('Failed to parse business case JSON from Gemini', 502);
+      throw new AppError('El modelo devolvió un business case con JSON inválido', 502);
     }
 
     const businessCase = businessCaseSchema.parse(parsed) as BusinessCase;

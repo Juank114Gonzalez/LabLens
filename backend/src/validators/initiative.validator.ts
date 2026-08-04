@@ -1,5 +1,25 @@
-import { InitiativeStatus } from '@prisma/client';
+import { InitiativeStatus, SourceType } from '@prisma/client';
 import { z } from 'zod';
+
+/** Comma-separated query values, e.g. ?status=TRIAGED_LAB,REGISTERED */
+function csvEnum<T extends Record<string, string>>(enumObject: T) {
+  return z
+    .string()
+    .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean))
+    .pipe(z.array(z.nativeEnum(enumObject)).min(1))
+    .optional();
+}
+
+export const initiativeFiltersSchema = z.object({
+  status: csvEnum(InitiativeStatus),
+  sourceType: csvEnum(SourceType),
+  triageClassificationId: z.string().uuid().optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  search: z.string().trim().min(1).max(255).optional(),
+});
+
+export type InitiativeFiltersDto = z.infer<typeof initiativeFiltersSchema>;
 
 export const companyContactSchema = z.object({
   empresa: z.string().trim().min(1).max(255),

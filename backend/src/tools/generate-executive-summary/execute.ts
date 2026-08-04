@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { loadPrompt } from '../../prompts/load-prompt.js';
-import { generatePlainText } from '../../services/gemini.service.js';
+import { generatePlainText } from '../../services/llm.service.js';
 import type { ExecutiveSummary } from '../../types/summary.types.js';
 import { AppError } from '../../utils/AppError.js';
 import { generateExecutiveSummaryArgsSchema } from './schema.js';

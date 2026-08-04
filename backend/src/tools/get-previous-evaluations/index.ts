@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { listPreviousEvaluationsForInitiative } from '../../repositories/evaluation.repository.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
 
@@ -8,8 +7,8 @@ export const getPreviousEvaluationsTool: ToolDefinition = {
     name: 'getPreviousEvaluations',
     description:
       'Obtiene evaluaciones previas completadas de la misma iniciativa (inmutables). Úsalas como contexto histórico, no las recalcules.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {},
     },
   },

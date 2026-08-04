@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 import { Router } from 'express';
 import {
+  createUserController,
   deleteUserController,
   getUserController,
   listUsersController,
@@ -13,6 +14,7 @@ import { authorize } from '../middlewares/authorize.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
+  createUserAdminSchema,
   updateUserAdminSchema,
   updateUserRoleSchema,
   userIdParamsSchema,
@@ -23,6 +25,12 @@ const userAdminRouter = Router();
 userAdminRouter.use(authenticate, authorize(Role.ADMIN));
 
 userAdminRouter.get('/', asyncHandler(listUsersController));
+
+userAdminRouter.post(
+  '/',
+  validateRequest(createUserAdminSchema),
+  asyncHandler(createUserController),
+);
 
 userAdminRouter.get(
   '/:id',

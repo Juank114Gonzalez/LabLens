@@ -1,5 +1,11 @@
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { config as loadDotenv } from 'dotenv';
+
+// `prisma db seed` loads .env before running this file, but `tsx prisma/seed.ts`
+// does not. Loading it here keeps both entry points working; on Render the vars
+// already live in the environment and dotenv finds nothing to override.
+loadDotenv();
 
 const prisma = new PrismaClient();
 
@@ -48,6 +54,7 @@ const workTables = [
       'Evalúa iniciativas disruptivas o adyacentes con alta incertidumbre que requieren experimentación rápida, validación de hipótesis y construcción de MVPs.',
     promptContext:
       'Sugiere Laboratorio Digital para iniciativas disruptivas o adyacentes con alta incertidumbre que requieren experimentación, validación de hipótesis y MVPs.',
+    notificationEmail: 'lab@ach.local',
   },
   {
     nombre: 'Procesos',
@@ -55,6 +62,7 @@ const workTables = [
       'Evalúa iniciativas enfocadas en automatización, RPA, optimización de procesos y eficiencias operativas.',
     promptContext:
       'Sugiere Procesos para iniciativas de automatización, RPA, optimización de procesos y eficiencias operativas.',
+    notificationEmail: 'procesos@ach.local',
   },
   {
     nombre: 'Producto / Operaciones & TI',
@@ -62,6 +70,7 @@ const workTables = [
       'Evalúa mejoras sobre productos existentes, nuevas funcionalidades, mantenimiento, soporte y requerimientos operativos.',
     promptContext:
       'Sugiere Producto / Operaciones & TI para mejoras de producto, nuevas funcionalidades, mantenimiento, soporte y requerimientos operativos.',
+    notificationEmail: 'producto@ach.local',
   },
   {
     nombre: 'Seguridad / Data & Analytics',
@@ -69,56 +78,60 @@ const workTables = [
       'Evalúa iniciativas relacionadas con gobierno de datos, analítica, inteligencia artificial, calidad de datos y ciberseguridad.',
     promptContext:
       'Sugiere Seguridad / Data & Analytics para gobierno de datos, analítica, IA, calidad de datos y ciberseguridad.',
+    notificationEmail: 'seguridad@ach.local',
   },
 ] as const;
 
+// Criterios oficiales del enunciado del reto (sección 5.3).
+// Los pesos declarados son 20 / 20 / 20 / 15 / 12.5 / 12.5; como el modelo guarda enteros,
+// el 12.5 se reparte en 13 (Escalabilidad) y 12 (Factibilidad técnica) para sumar 100.
 const criteria = [
   {
-    nombre: 'Impacto en el negocio',
-    descripcion: 'Impacto potencial sobre clientes, ingresos, eficiencia, cumplimiento o ventaja competitiva.',
+    nombre: 'Alineación estratégica',
+    descripcion: 'Grado de acople con los OKRs organizacionales y con el propósito del Laboratorio Digital.',
     promptContext:
-      'Evalúa el impacto potencial de la iniciativa sobre el negocio considerando clientes, ingresos, eficiencia, cumplimiento o ventaja competitiva.',
-    peso: 25,
+      'Evalúa qué tan alineada está la iniciativa con los OKRs organizacionales de ACH y con el propósito del Laboratorio Digital de innovación.',
+    peso: 20,
     orden: 1,
   },
   {
-    nombre: 'Viabilidad técnica',
-    descripcion: 'Viabilidad de implementación con tecnología, capacidades y arquitectura disponibles.',
+    nombre: 'Nivel de innovación',
+    descripcion: 'Novedad tecnológica y diferenciación competitiva frente al mercado y a lo ya existente en ACH.',
     promptContext:
-      'Evalúa qué tan viable es implementar la iniciativa con la tecnología, capacidades y arquitectura disponibles.',
+      'Evalúa la novedad tecnológica de la iniciativa y su diferenciación competitiva: qué tanto se aparta de lo que ACH y el mercado ya hacen.',
     peso: 20,
     orden: 2,
   },
   {
-    nombre: 'Disponibilidad y calidad de datos',
-    descripcion: 'Existencia de datos suficientes, confiables y accesibles, especialmente para IA o analítica.',
+    nombre: 'Valor para el negocio',
+    descripcion: 'Retorno esperado: aumento de ingresos, ahorro de costos o protección del negocio core.',
     promptContext:
-      'Evalúa si existen datos suficientes, confiables y accesibles para implementar la iniciativa, especialmente si involucra IA o analítica.',
-    peso: 15,
+      'Evalúa el retorno esperado de la iniciativa en términos de ingresos nuevos, ahorro de costos o protección de la posición de ACH en su negocio core de movimiento de dinero.',
+    peso: 20,
     orden: 3,
   },
   {
-    nombre: 'Alineación estratégica',
-    descripcion: 'Alineación con objetivos estratégicos y el propósito del Innovation Lab.',
+    nombre: 'Impacto al cliente',
+    descripcion: 'Mejora directa en la experiencia y satisfacción del usuario final.',
     promptContext:
-      'Evalúa qué tan alineada está la iniciativa con los objetivos estratégicos y el propósito del Innovation Lab.',
-    peso: 20,
+      'Evalúa si la iniciativa resuelve un dolor real, frecuente y significativo del cliente, y si crea una experiencia notablemente superior a las alternativas actuales.',
+    peso: 15,
     orden: 4,
   },
   {
-    nombre: 'Complejidad de implementación',
-    descripcion: 'Complejidad técnica, organizacional y operativa de implementación.',
+    nombre: 'Escalabilidad',
+    descripcion: 'Potencial de crecimiento y replicabilidad en otras áreas, clientes o mercados.',
     promptContext:
-      'Evalúa el nivel de complejidad técnica, organizacional y operativa requerido para implementar la iniciativa.',
-    peso: 10,
+      'Evalúa a cuántos clientes o áreas puede llegar la iniciativa y qué tan fácil es replicarla o escalarla más allá del piloto inicial sin reinventarla.',
+    peso: 13,
     orden: 5,
   },
   {
-    nombre: 'Potencial de adopción y escalabilidad',
-    descripcion: 'Probabilidad de adopción y potencial de escalar a otras áreas o procesos.',
+    nombre: 'Factibilidad técnica',
+    descripcion: 'Disponibilidad de datos y APIs, y complejidad de integración con la arquitectura actual.',
     promptContext:
-      'Evalúa la probabilidad de adopción por parte de los usuarios y el potencial de escalar la solución a otras áreas o procesos.',
-    peso: 10,
+      'Evalúa la disponibilidad de datos y APIs necesarios y la complejidad de integrar la iniciativa con la arquitectura y capacidades actuales de ACH.',
+    peso: 12,
     orden: 6,
   },
 ] as const;
@@ -164,16 +177,42 @@ async function main() {
       update: {
         descripcion: item.descripcion,
         promptContext: item.promptContext,
+        notificationEmail: item.notificationEmail,
         activo: true,
       },
       create: { ...item, activo: true },
     });
   }
 
-  const existingCriteria = await prisma.evaluationCriteria.count();
-  if (existingCriteria === 0) {
-    await prisma.evaluationCriteria.createMany({
-      data: criteria.map((item) => ({ ...item, activo: true })),
+  // Reconcilia los criterios con los del enunciado: elimina los que ya no aplican
+  // y actualiza pesos/orden de los que sobreviven. Las evaluaciones existentes no se
+  // ven afectadas porque guardan criteriaSnapshot y weightsSnapshot.
+  await prisma.evaluationCriteria.deleteMany({
+    where: { nombre: { notIn: criteria.map((item) => item.nombre) } },
+  });
+
+  for (const item of criteria) {
+    const existing = await prisma.evaluationCriteria.findFirst({
+      where: { nombre: item.nombre },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (existing) {
+      await prisma.evaluationCriteria.update({
+        where: { id: existing.id },
+        data: {
+          descripcion: item.descripcion,
+          promptContext: item.promptContext,
+          peso: item.peso,
+          orden: item.orden,
+          activo: true,
+        },
+      });
+      continue;
+    }
+
+    await prisma.evaluationCriteria.create({
+      data: { ...item, activo: true },
     });
   }
 

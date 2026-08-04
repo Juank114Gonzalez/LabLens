@@ -1,10 +1,7 @@
-import type { Content, FunctionCall, Part } from '@google/genai';
+import { betaTool } from '@anthropic-ai/sdk/helpers/beta/json-schema';
+import { env } from '../config/env.js';
 import { loadPrompt } from '../prompts/load-prompt.js';
-import {
-  executeTool,
-  getToolDeclarations,
-  type AgentToolMode,
-} from '../tools/registry.js';
+import { executeTool, getToolDeclarations, type AgentToolMode } from '../tools/registry.js';
 import type { ChatMessage } from '../types/chat.types.js';
 import {
   createEmptyArtifacts,
@@ -12,7 +9,13 @@ import {
   type ToolContext,
 } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { generateWithTools, getResponseParts } from './gemini.service.js';
+import {
+  anthropic,
+  assertNotRefused,
+  MAX_TOKENS,
+  thinkingConfig,
+  wrapLlmError,
+} from './llm.service.js';
 
 const MAX_TOOL_ROUNDS = 8;
 
@@ -21,23 +24,17 @@ export type AgentRunResult = {
   artifacts: ToolArtifacts;
 };
 
-function toContents(history: ChatMessage[]): Content[] {
+function toMessages(history: ChatMessage[]) {
   return history
     .filter((item) => item.role === 'user' || item.role === 'assistant')
     .map((item) => ({
-      role: item.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: item.content }],
+      role: item.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+      content: item.content,
     }));
 }
 
-function getFunctionCalls(parts: Part[]): FunctionCall[] {
-  return parts
-    .map((part) => part.functionCall)
-    .filter((call): call is FunctionCall => Boolean(call?.name));
-}
-
 /**
- * Modo Entrevista: Gemini solo conversa y consulta contexto.
+ * Modo Entrevista: el agente solo conversa y consulta contexto.
  * La evaluación corre en evaluation-pipeline.service (fuera de este loop).
  */
 export async function runInterviewAgent(
@@ -45,69 +42,64 @@ export async function runInterviewAgent(
   context: ToolContext,
 ): Promise<AgentRunResult> {
   const mode: AgentToolMode = 'interview';
-  const systemInstruction = await loadPrompt('system.md');
-  const declarations = getToolDeclarations(mode);
-  const contents: Content[] = toContents(history);
+  const system = await loadPrompt('system.md');
+  const messages = toMessages(history);
   const artifacts = createEmptyArtifacts();
 
-  if (contents.length === 0) {
+  if (messages.length === 0) {
     throw new AppError('Agent history cannot be empty', 400);
   }
 
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
-    const response = await generateWithTools({
-      systemInstruction,
-      contents,
-      functionDeclarations: declarations,
+  // Built per run so each tool call records its artifacts against the
+  // conversation that produced it.
+  const tools = getToolDeclarations(mode).map((declaration) =>
+    betaTool({
+      name: declaration.name,
+      description: declaration.description,
+      // The catalog stores plain JSON Schema on purpose so it stays provider
+      // neutral; the SDK's stricter schema type is satisfied here, at the adapter.
+      inputSchema: declaration.inputSchema as Parameters<typeof betaTool>[0]['inputSchema'],
+      run: async (input: Record<string, unknown>) => {
+        try {
+          const result = await executeTool(declaration.name, input ?? {}, artifacts, context);
+          return JSON.stringify({ result });
+        } catch (error) {
+          // Hand the failure back to the model instead of aborting the turn:
+          // it can rephrase, try another tool, or ask the evaluator.
+          const message = error instanceof Error ? error.message : 'Tool execution failed';
+          return JSON.stringify({ error: message });
+        }
+      },
+    }),
+  );
+
+  try {
+    const finalMessage = await anthropic.beta.messages.toolRunner({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: MAX_TOKENS,
+      thinking: thinkingConfig(),
+      system,
+      tools,
+      messages,
+      max_iterations: MAX_TOOL_ROUNDS,
     });
 
-    const parts = getResponseParts(response);
-    const functionCalls = getFunctionCalls(parts);
+    assertNotRefused(finalMessage.stop_reason);
 
-    if (functionCalls.length === 0) {
-      const message = response.text?.trim();
-      if (!message) {
-        throw new AppError('Gemini returned an empty agent response', 502);
-      }
-      return { message, artifacts };
+    const message = finalMessage.content
+      .filter((block) => block.type === 'text')
+      .map((block) => block.text)
+      .join('')
+      .trim();
+
+    if (!message) {
+      throw new AppError('El agente devolvió una respuesta vacía', 502);
     }
 
-    contents.push({ role: 'model', parts });
-
-    const functionResponseParts: Part[] = [];
-    for (const call of functionCalls) {
-      const args = (call.args ?? {}) as Record<string, unknown>;
-      try {
-        const result = await executeTool(
-          call.name ?? 'unknown',
-          args,
-          artifacts,
-          context,
-        );
-        functionResponseParts.push({
-          functionResponse: {
-            name: call.name ?? 'unknown',
-            id: call.id,
-            response: { result },
-          },
-        });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Tool execution failed';
-        functionResponseParts.push({
-          functionResponse: {
-            name: call.name ?? 'unknown',
-            id: call.id,
-            response: { error: message },
-          },
-        });
-      }
-    }
-
-    contents.push({ role: 'user', parts: functionResponseParts });
+    return { message, artifacts };
+  } catch (error) {
+    wrapLlmError(error);
   }
-
-  throw new AppError('Interview agent exceeded maximum tool rounds', 502);
 }
 
 /** @deprecated Use runInterviewAgent — evaluation is no longer agent-driven. */
