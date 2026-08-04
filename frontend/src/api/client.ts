@@ -12,6 +12,8 @@ type RequestOptions = {
   auth?: boolean;
   retry?: number;
   skipRefresh?: boolean;
+  /** Public endpoints send no cookies, so there is no CSRF surface to protect. */
+  credentials?: RequestCredentials;
 };
 
 type TokenGetter = () => string | null;
@@ -77,7 +79,7 @@ async function requestOnce<T>(path: string, options: RequestOptions): Promise<T>
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     signal: options.signal,
-    credentials: 'include',
+    credentials: options.credentials ?? 'include',
   });
 
   if (response.status === 401 && !options.skipRefresh) {

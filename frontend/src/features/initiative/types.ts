@@ -1,11 +1,15 @@
 export type InitiativeStatus =
   | 'DRAFT'
   | 'REGISTERED'
+  | 'TRIAGED_LAB'
+  | 'TRIAGED_EXTERNAL'
   | 'UNDER_REVIEW'
   | 'EVALUATED'
   | 'APPROVED'
   | 'REJECTED'
   | 'ARCHIVED';
+
+export type SourceType = 'INTERNAL' | 'EXTERNAL_CONTRACTOR' | 'INTERNATIONAL_REFERENCE';
 
 export type CompanyContact = {
   id?: string;
@@ -42,8 +46,9 @@ export type EvaluationSummary = {
 
 export type DomainInitiative = {
   id: string;
-  userId: string;
+  userId: string | null;
   status: InitiativeStatus;
+  sourceType: SourceType;
   diligenciadoPor: string;
   fechaDiligenciamiento: string;
   expectativaSolucion: string;
@@ -56,12 +61,24 @@ export type DomainInitiative = {
   porQueAhora: string;
   paraQue: string;
   comoSeResuelveHoy: string;
+  referenceOrganization: string | null;
+  referenceEvent: string | null;
+  referenceLink: string | null;
+  referenceRationale: string | null;
+  submitterName: string | null;
+  submitterEmail: string | null;
+  triageReasoning: string | null;
+  triageConfidence: number | null;
+  triagedAt: string | null;
+  notificationSentAt: string | null;
   createdAt: string;
   updatedAt: string;
   companyContacts: CompanyContact[];
   attachments: Attachment[];
   evaluations: EvaluationSummary[];
-  user?: { id: string; name: string; email: string };
+  user?: { id: string; name: string; email: string } | null;
+  triageClassification?: { id: string; nombre: string } | null;
+  triageWorkTable?: { id: string; nombre: string; notificationEmail: string | null } | null;
 };
 
 export type InitiativeDraftPayload = {
