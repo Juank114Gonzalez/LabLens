@@ -2,19 +2,19 @@
 
 **Comité Virtual de Innovación** del Laboratorio Digital de ACH.
 
-LabLens es un asistente inteligente que ayuda a evaluar y priorizar iniciativas de innovación. No reemplaza el criterio humano: estandariza el proceso, entrevista al proponente, consulta conocimiento histórico y entrega una recomendación fundamentada.
+LabLens es la primera línea de análisis del Laboratorio Digital. No reemplaza el criterio humano: filtra lo que no le corresponde al Lab, estandariza la evaluación de lo que sí, y entrega una recomendación fundamentada y auditable.
 
 ---
 
 ## ¿Qué resuelve?
 
-Hoy las iniciativas suelen pasar por formularios y reuniones donde se acumulan comentarios y criterios. LabLens convierte ese flujo en una experiencia conversacional:
+El cuello de botella no es la falta de ideas, es el costo de mirarlas. LabLens separa ese costo en dos caminos:
 
-1. El usuario describe su iniciativa.
-2. LabLens pregunta lo que falta.
-3. Consulta conocimiento del Lab e iniciativas similares (tools).
-4. Calcula un **Fit** con un motor propio (no inventado por el LLM).
-5. Genera un resumen ejecutivo con fortalezas, riesgos y siguientes pasos.
+**Camino rápido — todos los envíos, sin cuenta.** Quien propone entra a `/submit`, elige su canal (área interna, organización externa o referencia internacional), diligencia el formulario y en segundos ve la categoría asignada y la mesa de trabajo responsable. Si la iniciativa no es del Lab, el área dueña recibe un correo con el contexto completo.
+
+**Camino profundo — solo lo que se queda en el Lab.** Un evaluador toma el caso desde la bandeja y dispara el pipeline: seis criterios puntuados por separado, **Fit** calculado por la lógica de negocio (no inventado por el LLM), prioridad y business case de seis secciones. Cada evaluación congela los criterios y pesos que usó.
+
+Los detalles de diseño están en [`docs/`](./docs).
 
 ---
 
@@ -22,15 +22,17 @@ Hoy las iniciativas suelen pasar por formularios y reuniones donde se acumulan c
 
 ```text
 LabLens/
-├── backend/     # API Express + agente Gemini con tools
-├── frontend/    # App Next.js (Comité Virtual)
+├── backend/     # API Express + triage y pipeline sobre Gemini
+├── frontend/    # App Next.js (formulario público + back-office del Lab)
+├── docs/        # Entregables del reto
 └── README.md    # Este archivo
 ```
 
 | Carpeta | Rol |
 | --- | --- |
-| [`backend/`](./backend) | API, agente con function calling, PostgreSQL (Neon), knowledge mock |
-| [`frontend/`](./frontend) | UI SaaS: login, dashboard, chat de 3 paneles, evaluaciones |
+| [`backend/`](./backend) | API, triage rápido, pipeline de evaluación, PostgreSQL (Neon) |
+| [`frontend/`](./frontend) | Formulario público sin login, dashboard del Lab, bandeja y evaluaciones |
+| [`docs/`](./docs) | Arquitectura AWS, flujo operativo, modelo de datos, manual, deck y guion de demo |
 
 Cada carpeta tiene su propio `README` con detalle de arquitectura, scripts y variables de entorno.
 
@@ -56,20 +58,23 @@ Cada carpeta tiene su propio `README` con detalle de arquitectura, scripts y var
 ## Arquitectura (visión)
 
 ```text
-┌────────────┐     ┌──────────────────────────────────────┐
-│  Frontend  │────▶│  Backend API                         │
-│  Next.js   │     │  ChatService → AgentService (Gemini) │
-└────────────┘     │         ↓                            │
-                   │    Tools (negocio)                   │
-                   │  · searchKnowledge                   │
-                   │  · findSimilarInitiatives            │
-                   │  · calculateFit                      │
-                   │  · generateExecutiveSummary          │
-                   └──────────────────────────────────────┘
+  Envío público                      Back-office del Lab
+  (sin cuenta)                       (evaluadores y admins)
+       │                                      │
+       ▼                                      ▼
+  POST /api/public/initiatives          GET /api/initiatives/stats
+       │                                Bandeja · filtros · auditoría
+       ▼                                      │
+  triage.service  ── 1 llamada al LLM         ▼
+       │                              evaluation-pipeline.service
+       ├── ¿es del Lab? ── no ──▶ notification.service (SMTP)   6 pasos · scoring por criterio,
+       │                                                        clasificación, mesa, prioridad,
+       └── sí ──▶ bandeja del Lab ─────────────────────────────▶ business case, persistencia
 ```
 
-**Principio clave:** el LLM conversa y decide qué herramientas usar.  
-Las reglas de negocio (Fit, knowledge, similares) viven en tools del backend.
+**Principio clave:** el modelo razona y redacta; el número que ordena el portafolio lo calcula la lógica de negocio. Ver [`docs/flujo-operativo.md`](./docs/flujo-operativo.md) para el reparto exacto de decisiones.
+
+El target serverless en AWS (Bedrock, Step Functions, Lambda, DynamoDB, S3, Cognito, SES) está en [`docs/arquitectura-aws.md`](./docs/arquitectura-aws.md).
 
 ---
 
@@ -91,7 +96,9 @@ cd backend
 pnpm install
 cp .env.example .env
 # Completa GEMINI_API_KEY, DATABASE_URL y FRONTEND_ORIGIN
+# SMTP_* es opcional: sin él el triage enruta igual, solo omite el correo
 pnpm prisma:migrate
+pnpm prisma:seed
 pnpm dev
 ```
 
@@ -124,10 +131,12 @@ App en [http://localhost:3000](http://localhost:3000)
 
 ### 3. Flujo de demostración
 
-1. Inicia sesión (auth mock en el frontend).
-2. Crea una **nueva iniciativa / conversación**.
-3. Describe tu idea; LabLens entrevista y, con suficiente contexto, evalúa.
-4. Revisa el panel derecho y las evaluaciones completadas.
+1. Sin sesión, entra a [http://localhost:3000/submit](http://localhost:3000/submit) y envía una iniciativa operativa. Observa el enrutamiento y el correo al área.
+2. Envía otra claramente disruptiva: se queda en el Lab.
+3. Inicia sesión (`admin@lablens.local` / `Admin123*` tras `pnpm prisma:seed`) y ve a la **Bandeja del Lab**.
+4. Dispara **Evaluar ahora** o **Entrevistar** y revisa Fit, prioridad y business case.
+
+El guion completo está en [`docs/guion-demo.md`](./docs/guion-demo.md).
 
 ---
 
@@ -135,20 +144,22 @@ App en [http://localhost:3000](http://localhost:3000)
 
 | Capacidad | Estado |
 | --- | --- |
-| Chat conversacional con agente + tools | ✅ |
-| Fit determinístico | ✅ |
-| Knowledge e iniciativas mock (JSON/Markdown) | ✅ |
-| Persistencia de conversaciones (Neon) | ✅ |
-| UI Comité Virtual (3 paneles) | ✅ |
-| Auth real (JWT + refresh HttpOnly) | ⏳ Preparado / mock |
-| RAG + pgvector + embeddings | ⏳ Arquitectura lista (`searchKnowledge`) |
-| LangGraph / multi-agente | ⏳ Evolución prevista |
-| Integración Forms / SharePoint | ⏳ Futuro |
+| Formulario público sin login, 3 canales de origen | ✅ |
+| Triage rápido (1 llamada al LLM) con clasificación y enrutamiento | ✅ |
+| Notificación automática al área dueña (SMTP) | ✅ |
+| Pipeline profundo con scoring por criterio y business case | ✅ |
+| Fit determinístico con snapshot de criterios y pesos | ✅ |
+| Dashboard del Lab, bandeja y vista de auditoría | ✅ |
+| Auth real (JWT + refresh HttpOnly), sin registro público | ✅ |
+| Export PDF/DOCX del business case | ⏳ Previsto |
+| RAG + pgvector sobre conocimiento del Lab | ⏳ Arquitectura lista (`searchKnowledge`) |
+| Migración a Bedrock + Step Functions | ⏳ Diagramada en `docs/` |
 
 ---
 
 ## Documentación adicional
 
+- Entregables del reto: [`docs/`](./docs)
 - Backend: [`backend/README.md`](./backend/README.md)
 - Frontend: [`frontend/README.md`](./frontend/README.md)
 
