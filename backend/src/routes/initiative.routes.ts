@@ -4,6 +4,7 @@ import {
   createInitiativeController,
   deleteInitiativeController,
   getInitiativeController,
+  getInitiativeStatsController,
   listInitiativeEvaluationsController,
   listInitiativesController,
   registerInitiativeController,
@@ -27,9 +28,16 @@ initiativeRouter.use(authenticate);
 
 initiativeRouter.get('/', asyncHandler(listInitiativesController));
 
+// Registered before '/:id' so "stats" is not read as an initiative id.
+initiativeRouter.get(
+  '/stats',
+  authorize(Role.EVALUATOR, Role.ADMIN),
+  asyncHandler(getInitiativeStatsController),
+);
+
 initiativeRouter.post(
   '/',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(createInitiativeSchema),
   asyncHandler(createInitiativeController),
 );
@@ -42,7 +50,7 @@ initiativeRouter.get(
 
 initiativeRouter.patch(
   '/:id',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(initiativeIdParamsSchema, 'params'),
   validateRequest(updateInitiativeSchema),
   asyncHandler(updateInitiativeController),
@@ -50,7 +58,7 @@ initiativeRouter.patch(
 
 initiativeRouter.post(
   '/:id/register',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(initiativeIdParamsSchema, 'params'),
   asyncHandler(registerInitiativeController),
 );
@@ -71,7 +79,7 @@ initiativeRouter.post(
 
 initiativeRouter.delete(
   '/:id',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(initiativeIdParamsSchema, 'params'),
   asyncHandler(deleteInitiativeController),
 );
