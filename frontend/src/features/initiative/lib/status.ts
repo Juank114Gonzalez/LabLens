@@ -1,4 +1,10 @@
-import type { InitiativeStatus } from '@/features/initiative/types';
+import type { InitiativeStatus, SourceType } from '@/features/initiative/types';
+
+export const SOURCE_LABELS: Record<SourceType, string> = {
+  INTERNAL: 'Área interna de ACH',
+  EXTERNAL_CONTRACTOR: 'Organización externa',
+  INTERNATIONAL_REFERENCE: 'Referencia internacional',
+};
 
 export const INITIATIVE_STATUS_LABELS: Record<InitiativeStatus, string> = {
   DRAFT: 'Borrador',

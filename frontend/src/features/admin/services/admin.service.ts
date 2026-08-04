@@ -30,6 +30,12 @@ export type CatalogItem = {
 };
 
 export const listUsers = () => apiClient.get<AdminUser[]>('/api/users');
+export const createUser = (body: {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}) => apiClient.post<AdminUser>('/api/users', body);
 export const updateUser = (id: string, body: Partial<AdminUser> & { password?: string }) =>
   apiClient.patch<AdminUser>(`/api/users/${id}`, body);
 export const updateUserRole = (id: string, role: UserRole) =>

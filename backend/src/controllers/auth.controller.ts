@@ -4,22 +4,15 @@ import {
   loginUser,
   logoutUser,
   refreshSession,
-  registerUser,
 } from '../services/auth.service.js';
 import { REFRESH_COOKIE_NAME } from '../services/token.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
-import type { LoginDto, RegisterDto } from '../validators/auth.validator.js';
+import type { LoginDto } from '../validators/auth.validator.js';
 
 function getRefreshCookie(req: Request): string | undefined {
   const value = req.cookies?.[REFRESH_COOKIE_NAME];
   return typeof value === 'string' ? value : undefined;
-}
-
-export async function registerController(req: Request, res: Response): Promise<void> {
-  const body = req.body as RegisterDto;
-  const session = await registerUser(body, res);
-  sendSuccess(res, session, 201);
 }
 
 export async function loginController(req: Request, res: Response): Promise<void> {

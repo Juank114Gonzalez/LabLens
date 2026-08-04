@@ -4,21 +4,16 @@ import {
   logoutController,
   meController,
   refreshController,
-  registerController,
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { loginSchema, registerSchema } from '../validators/auth.validator.js';
+import { loginSchema } from '../validators/auth.validator.js';
 
 const authRouter = Router();
 
-authRouter.post(
-  '/register',
-  validateRequest(registerSchema),
-  asyncHandler(registerController),
-);
-
+// No public sign-up: initiatives arrive through /api/public and accounts are
+// created by an admin from the user panel.
 authRouter.post('/login', validateRequest(loginSchema), asyncHandler(loginController));
 
 authRouter.post('/logout', asyncHandler(logoutController));

@@ -35,9 +35,6 @@ export async function uploadAttachmentForInitiative(
   file: Express.Multer.File,
 ) {
   const initiative = await assertInitiativeAccess(initiativeId, actor);
-  if (actor.role === Role.GENERATOR && initiative.userId !== actor.id) {
-    throw new AppError('Initiative not found', 404);
-  }
   if (initiative.status !== InitiativeStatus.DRAFT) {
     throw new AppError('Solo se pueden adjuntar evidencias en borrador', 409);
   }

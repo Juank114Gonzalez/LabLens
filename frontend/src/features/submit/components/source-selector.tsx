@@ -75,9 +75,3 @@ export function SourceSelector({ value, onSelect }: Props) {
     </div>
   );
 }
-
-export const SOURCE_LABELS: Record<SourceType, string> = {
-  INTERNAL: 'Área interna de ACH',
-  EXTERNAL_CONTRACTOR: 'Organización externa',
-  INTERNATIONAL_REFERENCE: 'Referencia internacional',
-};

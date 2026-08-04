@@ -1,10 +1,5 @@
 import { apiClient } from '@/api/client';
-import type {
-  AuthSession,
-  AuthUser,
-  LoginPayload,
-  RegisterPayload,
-} from '@/types/auth';
+import type { AuthSession, AuthUser, LoginPayload } from '@/types/auth';
 
 type RefreshResponse = {
   accessToken: string;
@@ -13,10 +8,6 @@ type RefreshResponse = {
 
 export async function login(payload: LoginPayload): Promise<AuthSession> {
   return apiClient.post<AuthSession>('/api/auth/login', payload, { auth: false });
-}
-
-export async function register(payload: RegisterPayload): Promise<AuthSession> {
-  return apiClient.post<AuthSession>('/api/auth/register', payload, { auth: false });
 }
 
 export async function refreshSession(): Promise<RefreshResponse | null> {

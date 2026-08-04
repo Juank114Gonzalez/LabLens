@@ -5,10 +5,37 @@ import type {
   DomainInitiative,
   EvaluationSummary,
   InitiativeDraftPayload,
+  InitiativeStatus,
+  SourceType,
 } from '@/features/initiative/types';
 
-export async function listInitiatives(): Promise<DomainInitiative[]> {
-  return apiClient.get<DomainInitiative[]>('/api/initiatives');
+export type InitiativeFilters = {
+  status?: InitiativeStatus[];
+  sourceType?: SourceType[];
+  triageClassificationId?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+};
+
+function toQueryString(filters: InitiativeFilters = {}): string {
+  const params = new URLSearchParams();
+  if (filters.status?.length) params.set('status', filters.status.join(','));
+  if (filters.sourceType?.length) params.set('sourceType', filters.sourceType.join(','));
+  if (filters.triageClassificationId) {
+    params.set('triageClassificationId', filters.triageClassificationId);
+  }
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  if (filters.search) params.set('search', filters.search);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function listInitiatives(
+  filters?: InitiativeFilters,
+): Promise<DomainInitiative[]> {
+  return apiClient.get<DomainInitiative[]>(`/api/initiatives${toQueryString(filters)}`);
 }
 
 export async function getInitiative(id: string): Promise<DomainInitiative> {

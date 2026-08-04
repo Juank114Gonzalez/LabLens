@@ -24,14 +24,14 @@ companyContactRouter.get('/', asyncHandler(listCompanyContactsController));
 
 companyContactRouter.post(
   '/',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(createCompanyContactSchema),
   asyncHandler(createCompanyContactController),
 );
 
 companyContactRouter.patch(
   '/:id',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(companyContactIdParamsSchema, 'params'),
   validateRequest(updateCompanyContactSchema),
   asyncHandler(updateCompanyContactController),
@@ -39,7 +39,7 @@ companyContactRouter.patch(
 
 companyContactRouter.delete(
   '/:id',
-  authorize(Role.GENERATOR, Role.ADMIN),
+  authorize(Role.EVALUATOR, Role.ADMIN),
   validateRequest(companyContactIdParamsSchema, 'params'),
   asyncHandler(deleteCompanyContactController),
 );
