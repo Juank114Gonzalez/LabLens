@@ -9,7 +9,13 @@ import {
   type ToolContext,
 } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
-import { anthropic, assertNotRefused, MAX_TOKENS, wrapLlmError } from './llm.service.js';
+import {
+  anthropic,
+  assertNotRefused,
+  MAX_TOKENS,
+  thinkingConfig,
+  wrapLlmError,
+} from './llm.service.js';
 
 const MAX_TOOL_ROUNDS = 8;
 
@@ -71,7 +77,7 @@ export async function runInterviewAgent(
     const finalMessage = await anthropic.beta.messages.toolRunner({
       model: env.ANTHROPIC_MODEL,
       max_tokens: MAX_TOKENS,
-      thinking: { type: 'adaptive' },
+      thinking: thinkingConfig(),
       system,
       tools,
       messages,

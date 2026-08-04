@@ -8,7 +8,7 @@ El MVP demostrado usa un stack equivalente en Vercel / Render / Neon / Cloudinar
 
 | Capa | MVP actual | Target AWS | Por qué el reemplazo es directo |
 | --- | --- | --- | --- |
-| Modelo de lenguaje | Anthropic Claude vía API directa (`@anthropic-ai/sdk`) | **Amazon Bedrock** (mismo modelo, `AnthropicBedrockMantle`) | Todo el consumo del LLM pasa por `llm.service.ts` (`anthropic`, `generatePlainText`). Cambia el constructor del cliente y el prefijo del id; nada más. |
+| Modelo de lenguaje | Anthropic Claude vía API directa (`@anthropic-ai/sdk`), Haiku 4.5 por defecto | **Amazon Bedrock** (mismo modelo, `AnthropicBedrockMantle`) | Todo el consumo del LLM pasa por `llm.service.ts` (`anthropic`, `generatePlainText`). Cambia el constructor del cliente y el prefijo del id; nada más. |
 | Orquestación del pipeline pesado | `evaluation-pipeline.service.ts` (6 pasos secuenciales en un proceso) | **AWS Step Functions** | Cada paso ya es una función pura con entrada y salida serializable: scoring por criterio, clasificación, mesa, prioridad, business case, persistencia. |
 | Cómputo y API | Express sobre Node | **AWS Lambda + Amazon API Gateway** | Los controladores no tocan `req`/`res` más allá del envelope; el router es la única pieza que cambia. |
 | Base de datos | PostgreSQL (Neon) + Prisma | **Amazon DynamoDB** | Ver §4. Es el cambio de mayor esfuerzo: el modelo relacional debe rediseñarse por patrón de acceso. |

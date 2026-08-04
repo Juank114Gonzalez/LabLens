@@ -18,7 +18,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
-  ANTHROPIC_MODEL: z.string().min(1).default('claude-opus-5'),
+  ANTHROPIC_MODEL: z.string().min(1).default('claude-haiku-4-5'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:3000'),
   JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET is required'),
