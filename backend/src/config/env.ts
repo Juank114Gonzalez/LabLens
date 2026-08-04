@@ -20,7 +20,8 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
   ANTHROPIC_MODEL: z.string().min(1).default('claude-haiku-4-5'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  FRONTEND_ORIGIN: z.string().url().default('http://localhost:3000'),
+  // Accepts a comma-separated list so staging and production can share a build.
+  FRONTEND_ORIGIN: z.string().min(1).default('http://localhost:3000'),
   JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET is required'),
   JWT_ACCESS_EXPIRES: z.string().min(1).default('15m'),
@@ -59,3 +60,23 @@ function parseEnv(): Env {
 }
 
 export const env = parseEnv();
+
+/** Origins listed explicitly in FRONTEND_ORIGIN. */
+export const allowedOrigins = env.FRONTEND_ORIGIN.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const LOOPBACK_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+/**
+ * In development Next.js walks to the next free port when 3000 is taken, which
+ * silently breaks CORS and surfaces in the browser as "failed to fetch". Any
+ * loopback origin is accepted while developing; production stays on the
+ * explicit list.
+ */
+export function isOriginAllowed(origin: string): boolean {
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+  return env.NODE_ENV !== 'production' && LOOPBACK_ORIGIN.test(origin);
+}
