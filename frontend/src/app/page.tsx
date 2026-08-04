@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowRight, LogIn } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
 import { Logo } from '@/shared/components/logo';
@@ -24,33 +25,34 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Link
-            href={routes.submit}
-            className="flex flex-col gap-2 rounded-2xl border border-border/70 p-6 text-left transition hover:border-primary/60 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {/* One primary action. Sign-in is back-office access, not an equal choice. */}
+        <div className="space-y-3">
+          <Button
+            asChild
+            size="lg"
+            className="h-auto w-full max-w-lg rounded-2xl px-8 py-5 text-base sm:text-lg"
           >
-            <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Link href={routes.submit}>
+              Enviar sugerencia de iniciativa
               <ArrowRight className="size-5" />
-            </span>
-            <span className="font-heading text-lg font-medium">Enviar una iniciativa</span>
-            <span className="text-sm text-muted-foreground">
-              Para áreas de ACH, organizaciones externas y referencias internacionales. No requiere
-              cuenta.
-            </span>
-          </Link>
+            </Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Para áreas de ACH, organizaciones externas y referencias internacionales. No requiere
+            cuenta.
+          </p>
+        </div>
 
-          <Link
-            href={routes.login}
-            className="flex flex-col gap-2 rounded-2xl border border-border/70 p-6 text-left transition hover:border-primary/60 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-              <LogIn className="size-5" />
-            </span>
-            <span className="font-heading text-lg font-medium">Iniciar sesión</span>
-            <span className="text-sm text-muted-foreground">
-              Acceso para evaluadores y administradores del Laboratorio Digital.
-            </span>
-          </Link>
+        <div className="border-t border-border/60 pt-6">
+          <p className="text-sm text-muted-foreground">
+            ¿Evaluador o administrador del Laboratorio Digital?{' '}
+            <Link
+              href={routes.login}
+              className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Iniciar sesión
+            </Link>
+          </p>
         </div>
       </div>
     </div>
