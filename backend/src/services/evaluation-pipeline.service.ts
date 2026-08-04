@@ -7,7 +7,7 @@ import { listWorkTables } from '../repositories/work-table.repository.js';
 import type { BusinessCase, CriterionScore } from '../types/evaluation-domain.types.js';
 import { AppError } from '../utils/AppError.js';
 import { persistEvaluationResult } from './evaluation-persistence.service.js';
-import { generatePlainText } from './gemini.service.js';
+import { generatePlainText } from './llm.service.js';
 
 const scoreSchema = z.object({
   score: z.number().min(0).max(100),
@@ -39,7 +39,7 @@ function parseJson<T>(raw: string, schema: z.ZodType<T>): T {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new AppError('Failed to parse structured Gemini JSON', 502);
+    throw new AppError('El modelo devolvió un JSON inválido', 502);
   }
   return schema.parse(parsed);
 }

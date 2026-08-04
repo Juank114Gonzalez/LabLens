@@ -9,7 +9,7 @@ import {
 } from '../repositories/domain-initiative.repository.js';
 import { listWorkTables } from '../repositories/work-table.repository.js';
 import { AppError } from '../utils/AppError.js';
-import { generatePlainText } from './gemini.service.js';
+import { generatePlainText } from './llm.service.js';
 import { notifyWorkTable } from './notification.service.js';
 
 /**

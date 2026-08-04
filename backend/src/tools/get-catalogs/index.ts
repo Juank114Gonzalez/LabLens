@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { listClassifications } from '../../repositories/classification.repository.js';
 import { listWorkTables } from '../../repositories/work-table.repository.js';
 import type { ToolDefinition } from '../../types/tools.types.js';
@@ -9,7 +8,7 @@ export const getClassificationsTool: ToolDefinition = {
     name: 'getClassifications',
     description:
       'Lista clasificaciones inteligentes activas (nombre, descripción, promptContext). Debes elegir UNA al evaluar.',
-    parameters: { type: Type.OBJECT, properties: {} },
+    inputSchema: { type: 'object', properties: {} },
   },
   execute: async () => {
     const items = (await listClassifications()).filter((item) => item.activo);
@@ -31,7 +30,7 @@ export const getWorkTablesTool: ToolDefinition = {
     name: 'getWorkTables',
     description:
       'Lista mesas de trabajo activas (nombre, descripción, promptContext). Debes elegir UNA al evaluar.',
-    parameters: { type: Type.OBJECT, properties: {} },
+    inputSchema: { type: 'object', properties: {} },
   },
   execute: async () => {
     const items = (await listWorkTables()).filter((item) => item.activo);

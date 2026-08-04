@@ -1,10 +1,10 @@
-import type { FunctionDeclaration } from '@google/genai';
+import type { ToolDeclaration } from '../../types/tools.types.js';
 
-export const searchKnowledgeDeclaration: FunctionDeclaration = {
+export const searchKnowledgeDeclaration: ToolDeclaration = {
   name: 'searchKnowledge',
   description:
     'Busca información en la documentación del Innovation Lab (criterios, objetivos, tecnologías, políticas). Úsala antes de afirmar reglas o lineamientos del Lab. No inventes contenido.',
-  parametersJsonSchema: {
+  inputSchema: {
     type: 'object',
     properties: {
       query: {

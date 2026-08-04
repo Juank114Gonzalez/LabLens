@@ -2,11 +2,13 @@
 
 ## 1. Qué corre hoy y qué se propone para producción
 
-El MVP demostrado usa un stack equivalente en Vercel / Render / Neon / Cloudinary / Gemini por agilidad de desarrollo dentro del plazo del reto. El diseño AWS de esta página es el *path a producción*: cada pieza tiene un reemplazo directo y la frontera entre capas ya está trazada en el código (rutas → controladores → servicios → repositorios), de modo que la migración cambia adaptadores, no lógica de negocio.
+El MVP demostrado usa un stack equivalente en Vercel / Render / Neon / Cloudinary por agilidad de desarrollo dentro del plazo del reto. El diseño AWS de esta página es el *path a producción*: cada pieza tiene un reemplazo directo y la frontera entre capas ya está trazada en el código (rutas → controladores → servicios → repositorios), de modo que la migración cambia adaptadores, no lógica de negocio.
+
+**El modelo ya es el que pide el enunciado.** El MVP corre sobre Anthropic Claude, exactamente el mismo modelo que sirve Amazon Bedrock; lo consumimos por la API directa de Anthropic en lugar de por Bedrock. La migración es una línea: cambiar `new Anthropic(...)` por `new AnthropicBedrockMantle({ awsRegion })` en `llm.service.ts` y anteponer `anthropic.` al id del modelo (`anthropic.claude-opus-5`). El resto del archivo —y todo el código que lo llama— no cambia, porque el cliente de Bedrock expone la misma superficie `messages.create`.
 
 | Capa | MVP actual | Target AWS | Por qué el reemplazo es directo |
 | --- | --- | --- | --- |
-| Modelo de lenguaje | Google Gemini (`@google/genai`) | **Amazon Bedrock** (Anthropic Claude) | Todo el consumo del LLM pasa por `gemini.service.ts` (`generatePlainText`, `generateWithTools`). Es el único módulo que conoce al proveedor. |
+| Modelo de lenguaje | Anthropic Claude vía API directa (`@anthropic-ai/sdk`) | **Amazon Bedrock** (mismo modelo, `AnthropicBedrockMantle`) | Todo el consumo del LLM pasa por `llm.service.ts` (`anthropic`, `generatePlainText`). Cambia el constructor del cliente y el prefijo del id; nada más. |
 | Orquestación del pipeline pesado | `evaluation-pipeline.service.ts` (6 pasos secuenciales en un proceso) | **AWS Step Functions** | Cada paso ya es una función pura con entrada y salida serializable: scoring por criterio, clasificación, mesa, prioridad, business case, persistencia. |
 | Cómputo y API | Express sobre Node | **AWS Lambda + Amazon API Gateway** | Los controladores no tocan `req`/`res` más allá del envelope; el router es la única pieza que cambia. |
 | Base de datos | PostgreSQL (Neon) + Prisma | **Amazon DynamoDB** | Ver §4. Es el cambio de mayor esfuerzo: el modelo relacional debe rediseñarse por patrón de acceso. |
@@ -49,7 +51,7 @@ flowchart TB
     end
 
     subgraph Datos
-        BR["Amazon Bedrock<br/>Anthropic Claude"]
+        BR["Amazon Bedrock<br/>Anthropic Claude<br/>(hoy: API directa de Anthropic)"]
         DDB["DynamoDB<br/>iniciativas, evaluaciones, trazas"]
         S3B["S3<br/>adjuntos y reportes"]
         SES["SES<br/>notificación al área"]

@@ -8,7 +8,7 @@ sequenceDiagram
     participant F as Formulario público (/submit)
     participant API as API pública
     participant T as Servicio de triage
-    participant LLM as Modelo (Bedrock / Gemini)
+    participant LLM as Claude (API directa o Bedrock)
     participant DB as Base de datos
     participant M as Correo al área
     actor E as Evaluador del Lab

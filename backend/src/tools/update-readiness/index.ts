@@ -1,4 +1,3 @@
-import { Type } from '@google/genai';
 import { ConversationStatus, ReadinessStatus } from '@prisma/client';
 import { updateConversation } from '../../repositories/conversation.repository.js';
 import { getEvaluationOrThrow, updateEvaluation } from '../../repositories/evaluation.repository.js';
@@ -14,17 +13,17 @@ export const updateReadinessTool: ToolDefinition = {
     name: 'updateReadiness',
     description:
       'Actualiza el estado EvaluationReadiness tras cada avance de la entrevista. No genera la evaluación final.',
-    parameters: {
-      type: Type.OBJECT,
+    inputSchema: {
+      type: 'object',
       properties: {
-        problemUnderstanding: { type: Type.BOOLEAN },
-        expectedValue: { type: Type.BOOLEAN },
-        organizationalContext: { type: Type.BOOLEAN },
-        scope: { type: Type.BOOLEAN },
-        risks: { type: Type.BOOLEAN },
-        dependencies: { type: Type.BOOLEAN },
-        sufficientInformation: { type: Type.BOOLEAN },
-        notes: { type: Type.STRING },
+        problemUnderstanding: { type: 'boolean' },
+        expectedValue: { type: 'boolean' },
+        organizationalContext: { type: 'boolean' },
+        scope: { type: 'boolean' },
+        risks: { type: 'boolean' },
+        dependencies: { type: 'boolean' },
+        sufficientInformation: { type: 'boolean' },
+        notes: { type: 'string' },
       },
       required: [
         'problemUnderstanding',

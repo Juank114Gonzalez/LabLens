@@ -1,10 +1,10 @@
-import type { FunctionDeclaration } from '@google/genai';
+import type { ToolDeclaration } from '../../types/tools.types.js';
 
-export const generateExecutiveSummaryDeclaration: FunctionDeclaration = {
+export const generateExecutiveSummaryDeclaration: ToolDeclaration = {
   name: 'generateExecutiveSummary',
   description:
     'Genera un resumen ejecutivo estructurado (problema, solución, beneficios, riesgos, siguiente paso). Úsala cuando ya tengas contexto suficiente y, preferiblemente, Fit + similares.',
-  parametersJsonSchema: {
+  inputSchema: {
     type: 'object',
     properties: {
       initiativeContext: {
