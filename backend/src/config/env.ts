@@ -22,6 +22,14 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().min(1, 'CLOUDINARY_API_KEY is required'),
   CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET is required'),
   CLOUDINARY_FOLDER: z.string().min(1).default('lablens'),
+  // SMTP is optional: without it the triage still runs and the routing is recorded,
+  // only the outbound notification to the work table is skipped.
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_FROM: z.string().min(1).default('LabLens <no-reply@lablens.local>'),
+  PUBLIC_SUBMISSION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
 });
 
 export type Env = z.infer<typeof envSchema>;
