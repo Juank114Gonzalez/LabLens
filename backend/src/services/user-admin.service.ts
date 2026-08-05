@@ -40,6 +40,10 @@ export async function listUsersAdmin() {
 }
 
 export async function createUserAdmin(input: CreateUserAdminDto) {
+  if (!input.email.toLowerCase().endsWith('@achcolombia.com.co')) {
+    throw new AppError('El correo debe pertenecer al dominio @achcolombia.com.co', 400);
+  }
+
   const existing = await findUserByEmail(input.email);
   if (existing) {
     throw new AppError('Email already registered', 409);
@@ -88,6 +92,9 @@ export async function updateUserAdmin(
   }
 
   if (input.email && input.email.toLowerCase() !== user.email) {
+    if (!input.email.toLowerCase().endsWith('@achcolombia.com.co')) {
+      throw new AppError('El correo debe pertenecer al dominio @achcolombia.com.co', 400);
+    }
     const existing = await findUserByEmail(input.email);
     if (existing) {
       throw new AppError('Email already registered', 409);

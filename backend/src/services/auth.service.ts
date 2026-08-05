@@ -51,6 +51,11 @@ export async function loginUser(
   input: { email: string; password: string },
   res: Response,
 ): Promise<AuthSessionResponse> {
+  const emailLower = input.email.toLowerCase();
+  if (!emailLower.endsWith('@achcolombia.com.co')) {
+    throw new AppError('Solo se permiten correos de ACH Colombia (@achcolombia.com.co)', 403);
+  }
+
   const user = await findUserByEmail(input.email);
   if (!user) {
     throw new AppError('Invalid credentials', 401);
@@ -108,3 +113,49 @@ export async function getCurrentUser(userId: string): Promise<AuthSessionRespons
     avatarUrl: null,
   };
 }
+
+async function fetchMicrosoftProfile(token: string): Promise<{ mail?: string; userPrincipalName?: string; displayName?: string }> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Microsoft Graph API returned status ${response.status}`);
+    }
+
+    return await response.json() as any;
+  } catch (error: any) {
+    throw new AppError(`Failed to verify Microsoft token: ${error.message}`, 401);
+  }
+}
+
+export async function loginWithMicrosoft(
+  accessToken: string,
+  res: Response,
+): Promise<AuthSessionResponse> {
+  const profile = await fetchMicrosoftProfile(accessToken);
+  const email = (profile.mail || profile.userPrincipalName)?.toLowerCase();
+
+  if (!email) {
+    throw new AppError('Could not retrieve email from Microsoft profile', 400);
+  }
+
+  if (!email.endsWith('@achcolombia.com.co')) {
+    throw new AppError('Solo se permiten correos de ACH Colombia (@achcolombia.com.co)', 403);
+  }
+
+  const user = await findUserByEmail(email);
+  if (!user) {
+    throw new AppError('El usuario no está registrado en el sistema', 401);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('User account is inactive', 403);
+  }
+
+  return createSession(toAuthUser(user), res);
+}
+

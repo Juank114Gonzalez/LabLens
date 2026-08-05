@@ -5,4 +5,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'password is required').max(128),
 });
 
+export const microsoftLoginSchema = z.object({
+  accessToken: z.string().min(1, 'accessToken is required'),
+});
+
 export type LoginDto = z.infer<typeof loginSchema>;
+export type MicrosoftLoginDto = z.infer<typeof microsoftLoginSchema>;
+

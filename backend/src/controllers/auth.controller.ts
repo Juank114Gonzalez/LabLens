@@ -2,13 +2,14 @@ import type { Request, Response } from 'express';
 import {
   getCurrentUser,
   loginUser,
+  loginWithMicrosoft,
   logoutUser,
   refreshSession,
 } from '../services/auth.service.js';
 import { REFRESH_COOKIE_NAME } from '../services/token.service.js';
 import { AppError } from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
-import type { LoginDto } from '../validators/auth.validator.js';
+import type { LoginDto, MicrosoftLoginDto } from '../validators/auth.validator.js';
 
 function getRefreshCookie(req: Request): string | undefined {
   const value = req.cookies?.[REFRESH_COOKIE_NAME];
@@ -18,6 +19,12 @@ function getRefreshCookie(req: Request): string | undefined {
 export async function loginController(req: Request, res: Response): Promise<void> {
   const body = req.body as LoginDto;
   const session = await loginUser(body, res);
+  sendSuccess(res, session);
+}
+
+export async function microsoftLoginController(req: Request, res: Response): Promise<void> {
+  const body = req.body as MicrosoftLoginDto;
+  const session = await loginWithMicrosoft(body.accessToken, res);
   sendSuccess(res, session);
 }
 
@@ -39,3 +46,4 @@ export async function meController(req: Request, res: Response): Promise<void> {
   const user = await getCurrentUser(req.user.id);
   sendSuccess(res, user);
 }
+

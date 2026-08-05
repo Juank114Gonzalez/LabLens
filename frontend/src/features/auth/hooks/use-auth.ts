@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/errors';
 import { routes } from '@/config/routes';
-import { login, logout } from '@/features/auth/services/auth.service';
+import { login, loginWithMicrosoft, logout } from '@/features/auth/services/auth.service';
 import { homeForRole } from '@/features/auth/lib/roles';
 import type { LoginFormValues } from '@/features/auth/types/auth.schema';
 import { useAuthStore } from '@/stores/auth.store';
 import { useConversationMetaStore } from '@/stores/conversation-meta.store';
+import { getMsalInstance, loginRequest } from '@/config/msal';
 
 export function useAuth() {
   const router = useRouter();
@@ -29,6 +30,26 @@ export function useAuth() {
     onError: (error) => toast.error(getErrorMessage(error, 'No se pudo iniciar sesión')),
   });
 
+  const loginWithMicrosoftMutation = useMutation({
+    mutationFn: async () => {
+      const instance = await getMsalInstance();
+      const response = await instance.loginPopup(loginRequest);
+      return loginWithMicrosoft(response.accessToken);
+    },
+    onSuccess: (session) => {
+      setSession(session);
+      toast.success('Sesión iniciada con Microsoft');
+      router.replace(homeForRole(session.user.role));
+    },
+    onError: (error: any) => {
+      // Avoid toast if Microsoft login popup was closed by user
+      if (error && (error.name === 'BrowserAuthError' || error.errorCode === 'user_cancelled' || error.message?.includes('user_cancelled'))) {
+        return;
+      }
+      toast.error(getErrorMessage(error, 'Error al iniciar sesión con Microsoft'));
+    },
+  });
+
   const logoutMutation = useMutation({
     mutationFn: () => logout(),
     onSuccess: () => {
@@ -45,7 +66,9 @@ export function useAuth() {
     hydrated,
     isAuthenticated: Boolean(user),
     login: loginMutation.mutate,
+    loginWithMicrosoft: loginWithMicrosoftMutation.mutate,
     logout: logoutMutation.mutate,
-    isLoggingIn: loginMutation.isPending,
+    isLoggingIn: loginMutation.isPending || loginWithMicrosoftMutation.isPending,
   };
 }
+

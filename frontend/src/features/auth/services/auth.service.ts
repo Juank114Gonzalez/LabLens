@@ -10,6 +10,11 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
   return apiClient.post<AuthSession>('/api/auth/login', payload, { auth: false });
 }
 
+export async function loginWithMicrosoft(accessToken: string): Promise<AuthSession> {
+  return apiClient.post<AuthSession>('/api/auth/microsoft', { accessToken }, { auth: false });
+}
+
+
 export async function refreshSession(): Promise<RefreshResponse | null> {
   try {
     return await apiClient.post<RefreshResponse>(

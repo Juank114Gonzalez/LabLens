@@ -13,7 +13,7 @@ import {
 } from '@/features/auth/types/auth.schema';
 
 export function LoginForm() {
-  const { login, isLoggingIn } = useAuth();
+  const { login, loginWithMicrosoft, isLoggingIn } = useAuth();
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -61,6 +61,29 @@ export function LoginForm() {
       <Button type="submit" className="w-full" disabled={isLoggingIn}>
         {isLoggingIn ? 'Entrando…' : 'Entrar al Comité'}
       </Button>
+
+      <div className="relative flex py-1 items-center">
+        <div className="flex-grow border-t border-border"></div>
+        <span className="flex-shrink mx-4 text-[10px] text-muted-foreground uppercase tracking-wider">O</span>
+        <div className="flex-grow border-t border-border"></div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2 border-border/80 hover:bg-accent"
+        disabled={isLoggingIn}
+        onClick={() => loginWithMicrosoft()}
+      >
+        <svg className="h-4 w-4 shrink-0" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0H11V11H0V0Z" fill="#F25022"/>
+          <path d="M12 0H23V11H12V0Z" fill="#7FBA00"/>
+          <path d="M0 12H11V23H0V12Z" fill="#00A4EF"/>
+          <path d="M12 12H23V23H12V12Z" fill="#FFB900"/>
+        </svg>
+        Entrar con Microsoft
+      </Button>
     </motion.form>
   );
 }
+
