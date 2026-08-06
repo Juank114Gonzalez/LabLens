@@ -1,3 +1,6 @@
-allowBuilds:
-  sharp: true
-  unrs-resolver: true
+# `sharp` es el backend de optimización de next/image en producción;
+# `unrs-resolver` lo usa eslint-import-resolver. Ambos necesitan correr su
+# script de build tras instalar (pnpm 10 los bloquea por defecto).
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver

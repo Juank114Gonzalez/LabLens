@@ -6,7 +6,7 @@ Guion de contenido, una sección por lámina. Cada una lleva el mensaje que debe
 
 ## 1 · Portada
 
-**LabLens — Comité Virtual de Innovación**
+**Lente de Innovación — Comité Virtual del Laboratorio Digital**
 Laboratorio Digital de ACH Colombia · MVP funcional
 
 *Visual:* logo, una línea de tagline, nombres del equipo. Nada más.

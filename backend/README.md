@@ -1,4 +1,4 @@
-# LabLens Backend
+# Lente de Innovación — Backend
 
 Agente conversacional del Innovation Lab de ACH.
 

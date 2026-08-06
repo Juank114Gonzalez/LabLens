@@ -67,7 +67,7 @@ export default function EvaluationsPage() {
         ) : !query.data?.length ? (
           <EmptyState
             title="Aún no hay evaluaciones"
-            description="Selecciona una iniciativa registrada para iniciar la entrevista con LabLens."
+            description="Selecciona una iniciativa registrada para iniciar la entrevista con el Lente de Innovación."
             action={
               <Button asChild>
                 <Link href={routes.chatNew}>Seleccionar iniciativa</Link>

@@ -1,11 +1,11 @@
-# Innovation Lab ACH — LabLens
+# Innovation Lab ACH — Lente de Innovación
 
 El Innovation Lab de ACH evalúa iniciativas tecnológicas y de negocio con potencial
 de generar valor medible para la organización y el ecosistema financiero.
 
 ## Propósito
 
-LabLens es un asistente de evaluación temprana. Ayuda a:
+El Lente de Innovación es un asistente de evaluación temprana. Ayuda a:
 
 - Clarificar el problema y la propuesta de valor.
 - Contrastar la idea con criterios del Lab.

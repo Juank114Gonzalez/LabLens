@@ -1,14 +1,14 @@
-# LabLens
+# Lente de Innovación
 
-**Comité Virtual de Innovación** del Laboratorio Digital de ACH.
+**Comité Virtual** del Laboratorio Digital de ACH.
 
-LabLens es la primera línea de análisis del Laboratorio Digital. No reemplaza el criterio humano: filtra lo que no le corresponde al Lab, estandariza la evaluación de lo que sí, y entrega una recomendación fundamentada y auditable.
+El Lente de Innovación es la primera línea de análisis del Laboratorio Digital. No reemplaza el criterio humano: filtra lo que no le corresponde al Lab, estandariza la evaluación de lo que sí, y entrega una recomendación fundamentada y auditable.
 
 ---
 
 ## ¿Qué resuelve?
 
-El cuello de botella no es la falta de ideas, es el costo de mirarlas. LabLens separa ese costo en dos caminos:
+El cuello de botella no es la falta de ideas, es el costo de mirarlas. El Lente de Innovación separa ese costo en dos caminos:
 
 **Camino rápido — todos los envíos, sin cuenta.** Quien propone entra a `/submit`, elige su canal (área interna, organización externa o referencia internacional), diligencia el formulario y en segundos ve la categoría asignada y la mesa de trabajo responsable. Si la iniciativa no es del Lab, el área dueña recibe un correo con el contexto completo.
 
@@ -167,4 +167,4 @@ El guion completo está en [`docs/guion-demo.md`](./docs/guion-demo.md).
 
 ## Contexto ACH
 
-LabLens nace como prototipo para el **Innovation Lab / Laboratorio Digital de ACH**, con el objetivo de demostrar el flujo completo de evaluación y la experiencia conversacional antes de integrar fuentes corporativas reales.
+El Lente de Innovación nace como prototipo para el **Innovation Lab / Laboratorio Digital de ACH**, con el objetivo de demostrar el flujo completo de evaluación y la experiencia conversacional antes de integrar fuentes corporativas reales.

@@ -1,7 +1,7 @@
 {
   "name": "lablens-backend",
   "version": "0.1.0",
-  "description": "LabLens MVP backend — Innovation Lab ACH initiative evaluation chatbot",
+  "description": "Lente de Innovación MVP backend — Innovation Lab ACH initiative evaluation chatbot",
   "private": true,
   "type": "module",
   "engines": {

@@ -23,7 +23,7 @@ export function ChatInput({
   onStop,
   isGenerating = false,
   disabled = false,
-  placeholder = 'Describe tu iniciativa o responde a LabLens…',
+  placeholder = 'Describe tu iniciativa o responde al Lente de Innovación…',
 }: ChatInputProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -59,7 +59,7 @@ export function ChatInput({
           disabled={disabled || isGenerating}
           rows={1}
           className="min-h-[44px] resize-none border-0 bg-transparent px-3 py-2.5 shadow-none focus-visible:ring-0"
-          aria-label="Mensaje para LabLens"
+          aria-label="Mensaje para el Lente de Innovación"
         />
         {isGenerating ? (
           <Button

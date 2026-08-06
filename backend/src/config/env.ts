@@ -40,7 +40,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: optionalText(),
   SMTP_PASS: optionalText(),
-  SMTP_FROM: z.string().min(1).default('LabLens <no-reply@lablens.local>'),
+  SMTP_FROM: z.string().min(1).default('Lente de Innovación <no-reply@lablens.local>'),
   PUBLIC_SUBMISSION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
 });
 

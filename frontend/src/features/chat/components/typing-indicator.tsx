@@ -6,7 +6,7 @@ export function TypingIndicator() {
   return (
     <div
       className="inline-flex items-center gap-1.5 rounded-2xl border border-border/60 bg-card px-4 py-3"
-      aria-label="LabLens está escribiendo"
+      aria-label="El Lente de Innovación está escribiendo"
       role="status"
     >
       {[0, 1, 2].map((index) => (

@@ -15,7 +15,7 @@ const GREETING_PATTERNS = [
 ];
 
 export const GREETING_REPLY =
-  'Hola, soy LabLens, el asistente del Innovation Lab de ACH. Mi función es ayudarte a estructurar y evaluar iniciativas de innovación para determinar si son candidatas para desarrollarse dentro del Lab.\n\nCuando quieras, descríbeme tu iniciativa y comenzaremos a analizarla.';
+  'Hola, soy el Lente de Innovación, el asistente del Innovation Lab de ACH. Mi función es ayudarte a estructurar y evaluar iniciativas de innovación para determinar si son candidatas para desarrollarse dentro del Lab.\n\nCuando quieras, descríbeme tu iniciativa y comenzaremos a analizarla.';
 
 export function isGreetingMessage(message: string): boolean {
   const normalized = message.trim().replace(/\s+/g, ' ');

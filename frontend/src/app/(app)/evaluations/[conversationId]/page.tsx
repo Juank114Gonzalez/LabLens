@@ -114,7 +114,7 @@ export default function EvaluationDetailPage({ params }: EvaluationDetailPagePro
         ) : (
           <EmptyState
             title="Esta evaluación aún no tiene resultados"
-            description="Continúa la entrevista hasta que LabLens indique que está lista para evaluar."
+            description="Continúa la entrevista hasta que el Lente de Innovación indique que está lista para evaluar."
             action={
               <Button asChild>
                 <Link href={routes.chat(id)}>Ir a la conversación</Link>

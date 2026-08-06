@@ -34,6 +34,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -57,33 +59,35 @@
 }
 
 :root {
-  /* LabLens light — ink + teal glass */
-  --background: oklch(0.985 0.008 165);
-  --foreground: oklch(0.18 0.02 165);
-  --card: oklch(0.995 0.004 165);
-  --card-foreground: oklch(0.18 0.02 165);
-  --popover: oklch(0.995 0.004 165);
-  --popover-foreground: oklch(0.18 0.02 165);
-  --primary: oklch(0.42 0.1 175);
-  --primary-foreground: oklch(0.98 0.01 165);
-  --secondary: oklch(0.95 0.015 165);
-  --secondary-foreground: oklch(0.25 0.03 165);
-  --muted: oklch(0.95 0.012 165);
-  --muted-foreground: oklch(0.48 0.02 165);
-  --accent: oklch(0.93 0.03 175);
-  --accent-foreground: oklch(0.22 0.04 175);
+  /* Lente de Innovación light — ink + ACH blue */
+  --background: oklch(0.985 0.005 262);
+  --foreground: oklch(0.18 0.025 262);
+  --card: oklch(0.995 0.003 262);
+  --card-foreground: oklch(0.18 0.025 262);
+  --popover: oklch(0.995 0.003 262);
+  --popover-foreground: oklch(0.18 0.025 262);
+  --primary: oklch(0.52 0.22 262);
+  --primary-foreground: oklch(0.99 0.005 262);
+  --secondary: oklch(0.95 0.012 262);
+  --secondary-foreground: oklch(0.25 0.04 262);
+  --muted: oklch(0.95 0.01 262);
+  --muted-foreground: oklch(0.46 0.03 262);
+  --accent: oklch(0.93 0.035 262);
+  --accent-foreground: oklch(0.24 0.08 262);
   --destructive: oklch(0.58 0.2 25);
-  --border: oklch(0.9 0.015 165);
-  --input: oklch(0.92 0.012 165);
-  --ring: oklch(0.55 0.1 175);
-  --lab: oklch(0.55 0.12 175);
-  --lab-foreground: oklch(0.98 0.01 165);
-  --signal: oklch(0.72 0.12 75);
-  --chart-1: oklch(0.55 0.12 175);
-  --chart-2: oklch(0.68 0.1 145);
-  --chart-3: oklch(0.72 0.12 75);
-  --chart-4: oklch(0.5 0.08 220);
-  --chart-5: oklch(0.4 0.05 165);
+  --success: oklch(0.52 0.13 155);
+  --warning: oklch(0.58 0.13 75);
+  --border: oklch(0.9 0.012 262);
+  --input: oklch(0.92 0.01 262);
+  --ring: oklch(0.55 0.18 262);
+  --lab: oklch(0.52 0.22 262);
+  --lab-foreground: oklch(0.99 0.005 262);
+  --signal: oklch(0.62 0.14 75);
+  --chart-1: oklch(0.52 0.22 262);
+  --chart-2: oklch(0.62 0.12 155);
+  --chart-3: oklch(0.66 0.14 75);
+  --chart-4: oklch(0.58 0.12 205);
+  --chart-5: oklch(0.42 0.06 262);
   /* Categorical data-viz slots. Fixed order — assigned by entity, never cycled.
      Validated for the light surface (--card): lightness band, chroma floor,
      adjacent CVD separation and normal-vision separation all pass. Three slots
@@ -105,33 +109,40 @@
 }
 
 .dark {
-  /* LabLens dark — deep lab night + luminous teal */
-  --background: oklch(0.14 0.018 165);
-  --foreground: oklch(0.95 0.01 165);
-  --card: oklch(0.18 0.02 165);
-  --card-foreground: oklch(0.95 0.01 165);
-  --popover: oklch(0.18 0.02 165);
-  --popover-foreground: oklch(0.95 0.01 165);
-  --primary: oklch(0.78 0.12 175);
-  --primary-foreground: oklch(0.16 0.03 175);
-  --secondary: oklch(0.24 0.02 165);
-  --secondary-foreground: oklch(0.92 0.01 165);
-  --muted: oklch(0.22 0.018 165);
-  --muted-foreground: oklch(0.7 0.02 165);
-  --accent: oklch(0.26 0.035 175);
-  --accent-foreground: oklch(0.94 0.02 175);
+  /* Lente de Innovación dark — ACH night navy + cobalt.
+     --primary is tuned to one value that works as BOTH a solid fill under white
+     text and as blue text on --background, so `bg-primary` and `text-primary`
+     stay usable without a second link token. --lab is the luminous step up,
+     for marks and accents that need to sing (logo, hero words). */
+  --background: oklch(0.145 0.028 262);
+  --foreground: oklch(0.96 0.008 262);
+  --card: oklch(0.185 0.03 262);
+  --card-foreground: oklch(0.96 0.008 262);
+  --popover: oklch(0.185 0.03 262);
+  --popover-foreground: oklch(0.96 0.008 262);
+  --primary: oklch(0.58 0.21 262);
+  --primary-foreground: oklch(0.99 0.005 262);
+  --secondary: oklch(0.245 0.032 262);
+  --secondary-foreground: oklch(0.93 0.01 262);
+  --muted: oklch(0.225 0.028 262);
+  /* Raised from the old 0.70: the secondary text tier was the weakest link. */
+  --muted-foreground: oklch(0.75 0.03 262);
+  --accent: oklch(0.28 0.055 262);
+  --accent-foreground: oklch(0.95 0.02 262);
   --destructive: oklch(0.65 0.18 25);
-  --border: oklch(0.95 0.01 165 / 10%);
-  --input: oklch(0.95 0.01 165 / 12%);
-  --ring: oklch(0.72 0.11 175);
-  --lab: oklch(0.78 0.12 175);
-  --lab-foreground: oklch(0.14 0.02 175);
-  --signal: oklch(0.78 0.12 75);
-  --chart-1: oklch(0.78 0.12 175);
-  --chart-2: oklch(0.72 0.1 145);
-  --chart-3: oklch(0.78 0.12 75);
-  --chart-4: oklch(0.65 0.08 220);
-  --chart-5: oklch(0.55 0.04 165);
+  --success: oklch(0.75 0.14 155);
+  --warning: oklch(0.8 0.13 75);
+  --border: oklch(0.9 0.02 262 / 14%);
+  --input: oklch(0.9 0.02 262 / 16%);
+  --ring: oklch(0.65 0.19 262);
+  --lab: oklch(0.74 0.15 262);
+  --lab-foreground: oklch(0.145 0.03 262);
+  --signal: oklch(0.8 0.13 75);
+  --chart-1: oklch(0.65 0.19 262);
+  --chart-2: oklch(0.75 0.14 155);
+  --chart-3: oklch(0.8 0.13 75);
+  --chart-4: oklch(0.7 0.12 205);
+  --chart-5: oklch(0.6 0.06 262);
   /* Same five hues, re-stepped for the dark surface and validated as a set —
      not an automatic flip of the light values. */
   --viz-1: #3987e5;
@@ -161,20 +172,20 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.55 0.12 175 / 0.12), transparent),
-      radial-gradient(ellipse 60% 40% at 90% 0%, oklch(0.7 0.1 75 / 0.08), transparent);
+      radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.55 0.2 262 / 0.1), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 0%, oklch(0.6 0.16 240 / 0.07), transparent);
     min-height: 100%;
   }
 
   .dark body {
     background-image:
-      radial-gradient(ellipse 70% 45% at 8% -8%, oklch(0.55 0.12 175 / 0.18), transparent),
-      radial-gradient(ellipse 50% 35% at 100% 0%, oklch(0.55 0.08 75 / 0.1), transparent),
-      linear-gradient(180deg, oklch(0.14 0.018 165), oklch(0.12 0.015 165));
+      radial-gradient(ellipse 70% 45% at 8% -8%, oklch(0.55 0.22 262 / 0.2), transparent),
+      radial-gradient(ellipse 50% 35% at 100% 0%, oklch(0.55 0.18 240 / 0.12), transparent),
+      linear-gradient(180deg, oklch(0.145 0.028 262), oklch(0.12 0.024 262));
   }
 
   ::selection {
-    background: oklch(0.7 0.12 175 / 0.35);
+    background: oklch(0.6 0.2 262 / 0.4);
   }
 }
 
@@ -185,12 +196,141 @@
 
   .lab-grid {
     background-image:
-      linear-gradient(to right, oklch(0.7 0.02 165 / 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.7 0.02 165 / 0.06) 1px, transparent 1px);
+      linear-gradient(to right, oklch(0.7 0.06 262 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.7 0.06 262 / 0.07) 1px, transparent 1px);
     background-size: 32px 32px;
   }
 
   .glass-panel {
     @apply border border-border/70 bg-card/70 backdrop-blur-xl;
+  }
+
+  /*
+   * Animación del grafo del hero.
+   *
+   * Secuencia: el halo respira, entra el nodo central, se dibujan las aristas
+   * hacia afuera y aparecen los satélites; después arranca el bucle ambiente de
+   * pulsos que viajan DESDE los satélites HACIA el centro — la metáfora del
+   * producto: las iniciativas se enrutan al Laboratorio.
+   *
+   * Todo vive dentro de `prefers-reduced-motion: no-preference`, así que el
+   * estado por defecto (sin animación) es la composición estática ya legible.
+   * Cada elemento lleva su retardo en `--delay` desde el componente.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-bloom {
+      animation: hero-breathe 7s ease-in-out infinite;
+    }
+
+    .hero-center {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: hero-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.15s;
+    }
+
+    .hero-edge {
+      stroke-dasharray: var(--edge-len);
+      stroke-dashoffset: var(--edge-len);
+      animation: hero-draw 0.7s ease-out both;
+      animation-delay: var(--delay);
+    }
+
+    /* Segundo trazo sobre cada arista: una guión corto que recorre la línea. */
+    .hero-pulse {
+      stroke-dasharray: 5 var(--edge-len);
+      stroke-dashoffset: var(--edge-start);
+      opacity: 0;
+      animation: hero-travel 3.6s ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+
+    .hero-node {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: hero-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--delay);
+    }
+
+    .hero-dot {
+      animation: hero-twinkle 4s ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+
+    .hero-mark {
+      opacity: 0;
+      animation: hero-fade 0.8s ease-out both;
+      animation-delay: 0.45s;
+    }
+  }
+
+  @keyframes hero-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes hero-travel {
+    0% {
+      stroke-dashoffset: var(--edge-start);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    72% {
+      opacity: 1;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes hero-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes hero-fade {
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes hero-twinkle {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes hero-breathe {
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* Cobalt bloom under the primary CTA — the single focal point per screen. */
+  .cta-glow {
+    box-shadow:
+      0 0 0 1px oklch(0.65 0.19 262 / 0.35),
+      0 8px 30px -6px oklch(0.58 0.21 262 / 0.55),
+      0 18px 60px -12px oklch(0.58 0.21 262 / 0.4);
   }
 }

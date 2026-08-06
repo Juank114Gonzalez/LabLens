@@ -1,4 +1,4 @@
-# LabLens Frontend
+# Lente de Innovación — Frontend
 
 Comité Virtual de Innovación del Laboratorio Digital de ACH.
 
@@ -75,7 +75,7 @@ API esperada: [http://localhost:3001](http://localhost:3001)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=LabLens
+NEXT_PUBLIC_APP_NAME=Lente de Innovación
 ```
 
 ## Scripts
@@ -90,7 +90,7 @@ NEXT_PUBLIC_APP_NAME=LabLens
 1. Login (mock listo para JWT + refresh HttpOnly)
 2. Dashboard
 3. Nueva iniciativa → crea conversación en backend
-4. LabLens entrevista (una pregunta a la vez)
+4. El Lente de Innovación entrevista (una pregunta a la vez)
 5. Panel derecho: completitud + checklist
 6. Al completar: evaluación en tarjetas
 7. Consulta posterior desde Evaluaciones
@@ -98,7 +98,7 @@ NEXT_PUBLIC_APP_NAME=LabLens
 ## Diseño
 
 - Dark mode por defecto
-- Identidad LabLens: tinta de laboratorio + teal luminoso (no azul genérico)
+- Identidad Lente de Innovación: navy nocturno + azul cobalto ACH (hue 262)
 - Tipografía: Sora (heading) + Manrope (UI) + IBM Plex Mono
 - Layout de 3 paneles: sidebar · chat · insight panel
 

@@ -1,5 +1,5 @@
 /**
- * RAG retrieval contract for LabLens.
+ * RAG retrieval contract for Lente de Innovación.
  * Current implementation can stay markdown/mock; swap this module for pgvector later
  * without changing tool names (`searchKnowledge`).
  */

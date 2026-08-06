@@ -73,7 +73,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
             {conversation.initiative?.nombre || conversation.title || 'Evaluación'}
           </p>
           <p className="text-xs text-muted-foreground">
-            Entrevista de evaluación · Analista Senior LabLens
+            Entrevista de evaluación · Analista Senior del Laboratorio Digital
           </p>
         </div>
         <StatusBadge status={conversation.status} />
@@ -85,7 +85,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
             <EmptyState
               icon={FlaskConical}
               title="Preparando entrevista"
-              description="LabLens revisará la iniciativa y comenzará a profundizar."
+              description="El Lente de Innovación revisará la iniciativa y comenzará a profundizar."
               className="border-0 bg-transparent py-16"
             />
           ) : (
@@ -120,7 +120,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
         placeholder={
           completed
             ? 'Evaluación cerrada. Consulta los resultados.'
-            : 'Responde a LabLens para profundizar la evaluación…'
+            : 'Responde al Lente de Innovación para profundizar la evaluación…'
         }
       />
     </div>

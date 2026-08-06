@@ -78,8 +78,8 @@ export function ConversationSidebar() {
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-border/70 bg-sidebar text-sidebar-foreground">
       <div className="space-y-4 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <Logo compact className="min-w-0" />
+        <div className="flex items-start justify-between gap-2">
+          <Logo withAch compact className="min-w-0" />
           <Button
             type="button"
             size="icon"

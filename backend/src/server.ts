@@ -4,6 +4,6 @@ import { env } from './config/env.js';
 const app = createApp();
 
 app.listen(env.PORT, () => {
-  console.log(`LabLens backend listening on http://localhost:${env.PORT}`);
+  console.log(`Lente de Innovación backend listening on http://localhost:${env.PORT}`);
   console.log(`Environment: ${env.NODE_ENV}`);
 });
