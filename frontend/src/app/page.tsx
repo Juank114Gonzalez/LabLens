@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
 import { AchLogo } from '@/shared/components/ach-logo';
+import { ShareLink } from '@/shared/components/share-link';
 import { HeroNetwork } from '@/features/submit/components/hero-network';
 
 export const metadata: Metadata = {
@@ -59,6 +60,7 @@ export default function HomePage() {
             </Link>
           </Button>
           <p className="text-sm text-muted-foreground">Para áreas de ACH Colombia.</p>
+          <ShareLink className="mx-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         </div>
 
         <div className="w-full border-t border-border pt-6">
