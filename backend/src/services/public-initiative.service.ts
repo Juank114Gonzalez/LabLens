@@ -24,16 +24,22 @@ export async function submitPublicInitiative(
   input: PublicInitiativeDto,
   files: Express.Multer.File[] = [],
 ): Promise<PublicSubmissionResult> {
-  const { companyContacts, ...fields } = input;
+  const { companyContacts, tieneInteresado, ...fields } = input;
 
   const initiative = await createInitiative({
     userId: null,
     data: {
       ...fields,
-      fechaDiligenciamiento: fields.fechaDiligenciamiento ?? new Date(),
+      tieneInteresado,
+      // El formulario público ya no pregunta ninguno de los dos: quien diligencia
+      // es siempre quien envía, y la fecha es la del registro.
+      diligenciadoPor: fields.submitterName,
+      fechaDiligenciamiento: new Date(),
       status: InitiativeStatus.REGISTERED,
     },
-    companyContacts,
+    // La pregunta 12 manda: si no hay interesado, no se guardan contactos aunque
+    // el formulario los haya dejado en memoria al cambiar de opción.
+    companyContacts: tieneInteresado ? companyContacts : [],
   });
 
   for (const file of files) {

@@ -80,19 +80,31 @@ function buildCatalog(
 function buildInitiativeBlock(
   initiative: NonNullable<Awaited<ReturnType<typeof findInitiativeById>>>,
 ): string {
+  // Los dos formularios (público de 12 preguntas e interno) llenan subconjuntos
+  // distintos, así que se omite lo vacío: mandarle al modelo una decena de
+  // cadenas en blanco solo introduce ruido en la clasificación.
+  const omitEmpty = <T,>(value: T | '' | null | undefined): T | undefined =>
+    value === '' || value === null || value === undefined ? undefined : value;
+
   return JSON.stringify(
     {
       nombre: initiative.nombre,
       canalDeOrigen: initiative.sourceType,
-      expectativaSolucion: initiative.expectativaSolucion,
-      areaProcesoImpactado: initiative.areaProcesoImpactado,
-      areaInvolucrada: initiative.areaInvolucrada,
-      urgencia: initiative.urgencia,
-      impacto: initiative.impacto,
+      areaDelSolicitante: omitEmpty(initiative.areaSolicitante),
       necesidad: initiative.necesidad,
-      porQueAhora: initiative.porQueAhora,
-      paraQue: initiative.paraQue,
-      comoSeResuelveHoy: initiative.comoSeResuelveHoy,
+      solucionPropuesta: omitEmpty(initiative.solucionPropuesta),
+      impactaPrincipalmenteA: omitEmpty(initiative.impactaA),
+      productoRelacionado: omitEmpty(initiative.productoRelacionado),
+      beneficiosEsperados: initiative.beneficios.length ? initiative.beneficios : undefined,
+      urgencia: initiative.urgencia,
+      impacto: omitEmpty(initiative.impacto),
+      tieneInteresado: initiative.tieneInteresado ?? undefined,
+      expectativaSolucion: omitEmpty(initiative.expectativaSolucion),
+      areaProcesoImpactado: omitEmpty(initiative.areaProcesoImpactado),
+      areaInvolucrada: omitEmpty(initiative.areaInvolucrada),
+      porQueAhora: omitEmpty(initiative.porQueAhora),
+      paraQue: omitEmpty(initiative.paraQue),
+      comoSeResuelveHoy: omitEmpty(initiative.comoSeResuelveHoy),
       referenciaInternacional: initiative.referenceOrganization
         ? {
             organizacion: initiative.referenceOrganization,

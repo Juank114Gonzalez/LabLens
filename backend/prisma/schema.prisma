@@ -94,6 +94,16 @@ model Initiative {
   paraQue               String           @default("")
   comoSeResuelveHoy     String           @default("")
 
+  // Formulario público de 12 preguntas. Los de opción cerrada se guardan
+  // estructurados (no como prosa) para poder filtrarlos y graficarlos.
+  // El formulario interno no los diligencia, de ahí los defaults vacíos.
+  areaSolicitante     String   @default("") // Área de quien envía
+  solucionPropuesta   String   @default("") // Solución que propone
+  impactaA            String   @default("") // A quién impacta principalmente
+  productoRelacionado String   @default("") // Producto ACH relacionado
+  beneficios          String[] @default([]) // Selección múltiple
+  tieneInteresado     Boolean? // ¿Existe cliente, aliado o área interesada?
+
   // Solo para sourceType = INTERNATIONAL_REFERENCE
   referenceOrganization String?
   referenceEvent        String?

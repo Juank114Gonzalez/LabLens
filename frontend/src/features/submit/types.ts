@@ -2,26 +2,26 @@ import type { CompanyContact, InitiativeStatus } from '@/features/initiative/typ
 
 export type SourceType = 'INTERNAL' | 'EXTERNAL_CONTRACTOR' | 'INTERNATIONAL_REFERENCE';
 
+/**
+ * Formulario público de 12 preguntas. Los campos que solo diligencia el
+ * formulario interno (`porQueAhora`, `paraQue`, `comoSeResuelveHoy`,
+ * `areaProcesoImpactado`…) no viajan por este canal: Prisma los deja en su
+ * default vacío.
+ */
 export type PublicSubmissionPayload = {
   sourceType: SourceType;
   submitterName: string;
+  areaSolicitante: string;
   submitterEmail: string;
-  diligenciadoPor: string;
-  fechaDiligenciamiento: string;
-  expectativaSolucion: string;
   nombre: string;
-  areaProcesoImpactado: string;
-  areaInvolucrada: string;
-  urgencia: string;
-  impacto: string;
   necesidad: string;
-  porQueAhora: string;
-  paraQue: string;
-  comoSeResuelveHoy: string;
-  referenceOrganization?: string;
-  referenceEvent?: string;
-  referenceLink?: string;
-  referenceRationale?: string;
+  solucionPropuesta: string;
+  impactaA: string;
+  productoRelacionado: string;
+  beneficios: string[];
+  impacto?: string;
+  urgencia: string;
+  tieneInteresado: boolean;
   companyContacts: CompanyContact[];
 };
 

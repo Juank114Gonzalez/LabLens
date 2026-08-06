@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { contactSchema } from '@/features/initiative/schemas/initiative-form.schema';
-import { URGENCY_OPTIONS } from '@/features/initiative/lib/status';
 
 export const SOURCE_TYPES = [
   'INTERNAL',
@@ -8,64 +7,86 @@ export const SOURCE_TYPES = [
   'INTERNATIONAL_REFERENCE',
 ] as const;
 
-/** Mirrors backend/src/validators/public-initiative.validator.ts. */
+/**
+ * Catálogo del formulario público de 12 preguntas.
+ *
+ * Debe permanecer idéntico a `backend/src/validators/public-initiative.validator.ts`:
+ * ambos lados validan contra las mismas cadenas literales, así que un cambio de
+ * redacción en una opción hay que replicarlo allá o el envío será rechazado.
+ */
+export const IMPACT_TARGETS = [
+  'Cliente final',
+  'Comercio o empresa',
+  'Entidad financiera',
+  'Colaborador o área interna de ACH',
+  'Aliado',
+  'Otras',
+] as const;
+
+export const RELATED_PRODUCTS = [
+  'PSE',
+  'SOI',
+  'ACH en Línea',
+  'TESO',
+  'Portal de Usuarios',
+  'ACH Data',
+  'Open Finance',
+  'No, es un nuevo producto',
+] as const;
+
+export const BENEFIT_OPTIONS = [
+  'Nuevos ingresos',
+  'Eficiencia operativa',
+  'Mejor experiencia',
+  'Crecimiento transaccional',
+  'Posicionamiento estratégico',
+  'Reducción de riesgos',
+  'Otras',
+] as const;
+
+export const URGENCY_LEVELS = [
+  '1 - Nada urgente (puede abordarse en más de 12 meses)',
+  '2 - Poco urgente (debería abordarse entre 6 y 12 meses)',
+  '3 - Urgencia media (debería abordarse entre 3 y 6 meses)',
+  '4 - Urgente (debería abordarse entre 1 y 3 meses)',
+  '5 - Muy urgente (requiere atención en menos de 1 mes)',
+] as const;
+
 export const publicInitiativeFormSchema = z
   .object({
     sourceType: z.enum(SOURCE_TYPES),
-    /** Nombre de quien envía; también se usa como diligenciadoPor. */
+
+    // 1, 2, 3
     submitterName: z.string().trim().min(1, 'Requerido'),
+    areaSolicitante: z.string().trim().min(1, 'Requerido').max(255),
     submitterEmail: z.string().trim().email('Correo inválido'),
 
-    fechaDiligenciamiento: z.string().min(1, 'Requerido'),
-    expectativaSolucion: z.string().trim().min(1, 'Requerido'),
-    nombre: z.string().trim().min(1, 'Requerido'),
-    areaProcesoImpactado: z.string().trim().min(1, 'Requerido'),
-    areaInvolucrada: z.string().trim().min(1, 'Requerido'),
-    urgencia: z.enum(URGENCY_OPTIONS),
-    impacto: z.string().trim().min(1, 'Requerido').max(500),
+    // 4, 5, 6
+    nombre: z.string().trim().min(1, 'Requerido').max(255),
     necesidad: z.string().trim().min(1, 'Requerido'),
-    porQueAhora: z.string().trim().min(1, 'Requerido'),
-    paraQue: z.string().trim().min(1, 'Requerido'),
-    comoSeResuelveHoy: z.string().trim().min(1, 'Requerido'),
+    solucionPropuesta: z.string().trim().min(1, 'Requerido'),
 
-    referenceOrganization: z.string().trim().optional(),
-    referenceEvent: z.string().trim().optional(),
-    referenceLink: z.string().trim().optional(),
-    referenceRationale: z.string().trim().optional(),
+    // 7, 8
+    impactaA: z.enum(IMPACT_TARGETS, { message: 'Selecciona una opción' }),
+    productoRelacionado: z.enum(RELATED_PRODUCTS, { message: 'Selecciona una opción' }),
 
-    companyContacts: z.array(contactSchema).min(1, 'Agrega al menos un contacto'),
+    // 9, 10 — opcionales
+    beneficios: z.array(z.enum(BENEFIT_OPTIONS)),
+    impacto: z.string().trim().max(500).optional(),
+
+    // 11, 12
+    urgencia: z.enum(URGENCY_LEVELS, { message: 'Selecciona un nivel' }),
+    tieneInteresado: z.boolean({ message: 'Selecciona una opción' }),
+
+    companyContacts: z.array(contactSchema),
   })
   .superRefine((value, ctx) => {
-    if (value.sourceType !== 'INTERNATIONAL_REFERENCE') {
-      return;
-    }
-
-    const required = [
-      ['referenceOrganization', 'Indica la organización'],
-      ['referenceEvent', 'Indica el evento o congreso'],
-      ['referenceRationale', 'Explica por qué es un benchmark relevante'],
-    ] as const;
-
-    for (const [field, message] of required) {
-      if (!value[field]) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message });
-      }
-    }
-
-    if (!value.referenceLink) {
+    // Solo se exige contacto cuando el usuario afirmó que existe un interesado.
+    if (value.tieneInteresado && value.companyContacts.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['referenceLink'],
-        message: 'Indica el enlace de referencia',
-      });
-      return;
-    }
-
-    if (!z.string().url().safeParse(value.referenceLink).success) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['referenceLink'],
-        message: 'Debe ser una URL válida',
+        path: ['companyContacts'],
+        message: 'Agrega al menos un contacto',
       });
     }
   });

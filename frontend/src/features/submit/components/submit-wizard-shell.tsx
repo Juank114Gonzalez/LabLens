@@ -6,7 +6,7 @@ import { AchLogo } from '@/shared/components/ach-logo';
 import { routes } from '@/config/routes';
 import { cn } from '@/lib/utils';
 
-export const WIZARD_STEPS = ['Quién', 'Solicitud', 'Compuerta', 'Evidencias'] as const;
+export const WIZARD_STEPS = ['Quién', 'Iniciativa', 'Alcance', 'Cierre'] as const;
 
 export const TOTAL_STEPS = WIZARD_STEPS.length;
 
