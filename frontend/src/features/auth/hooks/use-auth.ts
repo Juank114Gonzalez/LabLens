@@ -41,9 +41,15 @@ export function useAuth() {
       toast.success('Sesión iniciada con Microsoft');
       router.replace(homeForRole(session.user.role));
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Avoid toast if Microsoft login popup was closed by user
-      if (error && (error.name === 'BrowserAuthError' || error.errorCode === 'user_cancelled' || error.message?.includes('user_cancelled'))) {
+      const err = error as { name?: string; errorCode?: string; message?: string } | null;
+      if (
+        err &&
+        (err.name === 'BrowserAuthError' ||
+          err.errorCode === 'user_cancelled' ||
+          err.message?.includes('user_cancelled'))
+      ) {
         return;
       }
       toast.error(getErrorMessage(error, 'Error al iniciar sesión con Microsoft'));
