@@ -14,6 +14,19 @@ export const SOURCE_TYPES = [
  * ambos lados validan contra las mismas cadenas literales, así que un cambio de
  * redacción en una opción hay que replicarlo allá o el envío será rechazado.
  */
+/** Pregunta 2 — áreas de ACH Colombia. */
+export const AREA_OPTIONS = [
+  'Operaciones & Tecnología',
+  'Comercial',
+  'Producto e Innovación',
+  'Secretaría de Presidencia',
+  'Asuntos Legales',
+  'Seguridad & Riesgo',
+  'Auditoría',
+  'Talento Humano & Administrativa',
+  'Planeación',
+] as const;
+
 export const IMPACT_TARGETS = [
   'Cliente final',
   'Comercio o empresa',
@@ -58,7 +71,7 @@ export const publicInitiativeFormSchema = z
 
     // 1, 2, 3
     submitterName: z.string().trim().min(1, 'Requerido'),
-    areaSolicitante: z.string().trim().min(1, 'Requerido').max(255),
+    areaSolicitante: z.enum(AREA_OPTIONS, { message: 'Selecciona tu área' }),
     submitterEmail: z.string().trim().email('Correo inválido'),
 
     // 4, 5, 6
@@ -66,9 +79,11 @@ export const publicInitiativeFormSchema = z
     necesidad: z.string().trim().min(1, 'Requerido'),
     solucionPropuesta: z.string().trim().min(1, 'Requerido'),
 
-    // 7, 8
-    impactaA: z.enum(IMPACT_TARGETS, { message: 'Selecciona una opción' }),
-    productoRelacionado: z.enum(RELATED_PRODUCTS, { message: 'Selecciona una opción' }),
+    // 7, 8 — selección múltiple
+    impactaA: z.array(z.enum(IMPACT_TARGETS)).min(1, 'Selecciona al menos una opción'),
+    productoRelacionado: z
+      .array(z.enum(RELATED_PRODUCTS))
+      .min(1, 'Selecciona al menos una opción'),
 
     // 9, 10 — opcionales
     beneficios: z.array(z.enum(BENEFIT_OPTIONS)),

@@ -99,8 +99,8 @@ model Initiative {
   // El formulario interno no los diligencia, de ahí los defaults vacíos.
   areaSolicitante     String   @default("") // Área de quien envía
   solucionPropuesta   String   @default("") // Solución que propone
-  impactaA            String   @default("") // A quién impacta principalmente
-  productoRelacionado String   @default("") // Producto ACH relacionado
+  impactaA            String[] @default([]) // A quién impacta (selección múltiple)
+  productoRelacionado String[] @default([]) // Productos ACH (selección múltiple)
   beneficios          String[] @default([]) // Selección múltiple
   tieneInteresado     Boolean? // ¿Existe cliente, aliado o área interesada?
 

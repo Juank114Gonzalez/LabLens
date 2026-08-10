@@ -16,8 +16,8 @@ export type PublicSubmissionPayload = {
   nombre: string;
   necesidad: string;
   solucionPropuesta: string;
-  impactaA: string;
-  productoRelacionado: string;
+  impactaA: string[];
+  productoRelacionado: string[];
   beneficios: string[];
   impacto?: string;
   urgencia: string;

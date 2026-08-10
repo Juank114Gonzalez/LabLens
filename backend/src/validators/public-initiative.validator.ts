@@ -9,7 +9,20 @@ const requiredText = (max?: number) => {
 
 const optionalText = (max: number) => z.string().trim().max(max).optional();
 
-/** Pregunta 7 — opción única. */
+/** Pregunta 2 — áreas de ACH Colombia. */
+export const AREA_OPTIONS = [
+  'Operaciones & Tecnología',
+  'Comercial',
+  'Producto e Innovación',
+  'Secretaría de Presidencia',
+  'Asuntos Legales',
+  'Seguridad & Riesgo',
+  'Auditoría',
+  'Talento Humano & Administrativa',
+  'Planeación',
+] as const;
+
+/** Pregunta 7 — selección múltiple. */
 export const IMPACT_TARGETS = [
   'Cliente final',
   'Comercio o empresa',
@@ -19,7 +32,7 @@ export const IMPACT_TARGETS = [
   'Otras',
 ] as const;
 
-/** Pregunta 8 — opción única. */
+/** Pregunta 8 — selección múltiple. */
 export const RELATED_PRODUCTS = [
   'PSE',
   'SOI',
@@ -67,7 +80,7 @@ export const publicInitiativeSchema = z
 
     // 1, 2, 3 — quién envía
     submitterName: requiredText(255),
-    areaSolicitante: requiredText(255),
+    areaSolicitante: z.enum(AREA_OPTIONS),
     submitterEmail: z.string().trim().email().max(255),
 
     // 4, 5, 6 — la iniciativa
@@ -75,9 +88,11 @@ export const publicInitiativeSchema = z
     necesidad: requiredText(),
     solucionPropuesta: requiredText(),
 
-    // 7, 8 — alcance
-    impactaA: z.enum(IMPACT_TARGETS),
-    productoRelacionado: z.enum(RELATED_PRODUCTS),
+    // 7, 8 — alcance (selección múltiple, al menos una)
+    impactaA: z.array(z.enum(IMPACT_TARGETS)).min(1, 'Seleccione al menos una opción'),
+    productoRelacionado: z
+      .array(z.enum(RELATED_PRODUCTS))
+      .min(1, 'Seleccione al menos una opción'),
 
     // 9, 10 — valor esperado (ambas opcionales)
     beneficios: z.array(z.enum(BENEFIT_OPTIONS)).default([]),

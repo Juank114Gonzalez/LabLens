@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Building2,
   Check,
+  ChevronDown,
   Gauge,
   Lightbulb,
   Paperclip,
@@ -24,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getErrorMessage } from '@/api/errors';
 import { formatBytes } from '@/features/initiative/lib/status';
 import {
+  AREA_OPTIONS,
   BENEFIT_OPTIONS,
   IMPACT_TARGETS,
   RELATED_PRODUCTS,
@@ -34,7 +36,10 @@ import {
 import { submitPublicInitiative } from '@/features/submit/services/submit.service';
 import { routes } from '@/config/routes';
 import type { PublicSubmissionResult, SourceType } from '@/features/submit/types';
-import { SubmitWizardShell, TOTAL_STEPS } from '@/features/submit/components/submit-wizard-shell';
+import {
+  SubmitWizardShell,
+  TOTAL_STEPS,
+} from '@/features/submit/components/submit-wizard-shell';
 import { cn } from '@/lib/utils';
 
 const ACCEPTED_EVIDENCE =
@@ -81,15 +86,15 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     defaultValues: {
       sourceType: defaultSourceType,
       submitterName: '',
-      areaSolicitante: '',
+      areaSolicitante: undefined,
       submitterEmail: '',
       nombre: '',
       necesidad: '',
       solucionPropuesta: '',
       // Las de opción cerrada arrancan sin selección: forzar un default
       // sesgaría las respuestas hacia la primera opción de la lista.
-      impactaA: undefined,
-      productoRelacionado: undefined,
+      impactaA: [],
+      productoRelacionado: [],
       beneficios: [],
       impacto: '',
       urgencia: undefined,
@@ -156,6 +161,22 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function onInvalid() {
+    toast.error('Revisa los campos obligatorios antes de enviar');
+  }
+
+  /**
+   * El envío es siempre explícito, nunca automático: en el paso final el usuario
+   * todavía puede adjuntar evidencias o corregir respuestas, y enviar solo con
+   * marcar una opción le quitaría esa oportunidad sin avisar.
+   *
+   * Se maneja controlado en vez de con `register` para guardar un booleano real
+   * y no la cadena "true"/"false" que entrega el radio.
+   */
+  function answerInteresado(value: boolean) {
+    form.setValue('tieneInteresado', value, { shouldValidate: true, shouldDirty: true });
+  }
+
   async function onSubmit(values: PublicInitiativeFormValues) {
     setSubmitting(true);
     try {
@@ -200,28 +221,47 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     );
 
   return (
-    <SubmitWizardShell step={step} title={STEP_TITLES[step - 1]} onBack={goBack} footer={footer}>
+    <SubmitWizardShell
+      step={step}
+      title={STEP_TITLES[step - 1]}
+      onBack={goBack}
+      footer={footer}
+    >
       <form
         id="public-initiative-form"
         className="space-y-5"
-        onSubmit={form.handleSubmit(onSubmit, () =>
-          toast.error('Revisa los campos obligatorios antes de enviar'),
-        )}
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
       >
         {step === 1 ? (
           <SectionCard icon={User} title="Quién envía">
-            <Field index={1} label="Nombre completo" required error={errors.submitterName?.message}>
+            <Field
+              index={1}
+              label="Nombre completo"
+              required
+              error={errors.submitterName?.message}
+            >
               <TextInput
                 placeholder="Escriba su respuesta"
                 {...form.register('submitterName')}
               />
             </Field>
 
-            <Field index={2} label="Área" required error={errors.areaSolicitante?.message}>
-              <TextInput
-                placeholder="Escriba su respuesta"
-                {...form.register('areaSolicitante')}
-              />
+            <Field
+              index={2}
+              label="Área"
+              required
+              error={errors.areaSolicitante?.message}
+            >
+              <SelectControl defaultValue="" {...form.register('areaSolicitante')}>
+                <option value="" disabled>
+                  Selecciona tu área
+                </option>
+                {AREA_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectControl>
             </Field>
 
             <Field
@@ -247,7 +287,10 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
               required
               error={errors.nombre?.message}
             >
-              <TextInput placeholder="Escriba su respuesta" {...form.register('nombre')} />
+              <TextInput
+                placeholder="Escriba su respuesta"
+                {...form.register('nombre')}
+              />
             </Field>
 
             <Field
@@ -256,7 +299,11 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
               required
               error={errors.necesidad?.message}
             >
-              <LongText rows={4} placeholder="Escriba su respuesta" {...form.register('necesidad')} />
+              <LongText
+                rows={4}
+                placeholder="Escriba su respuesta"
+                {...form.register('necesidad')}
+              />
             </Field>
 
             <Field
@@ -280,12 +327,13 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
               <Field
                 index={7}
                 label="¿A quién impacta principalmente?"
+                hint="Puedes escoger más de uno."
                 required
                 error={errors.impactaA?.message}
               >
                 <div className="space-y-2">
                   {IMPACT_TARGETS.map((option) => (
-                    <ChoiceOption
+                    <MultiChoiceOption
                       key={option}
                       label={option}
                       value={option}
@@ -298,12 +346,13 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
               <Field
                 index={8}
                 label="¿Está relacionada con algún producto actual?"
+                hint="Puedes escoger más de uno."
                 required
                 error={errors.productoRelacionado?.message}
               >
                 <div className="space-y-2">
                   {RELATED_PRODUCTS.map((option) => (
-                    <ChoiceOption
+                    <MultiChoiceOption
                       key={option}
                       label={option}
                       value={option}
@@ -339,7 +388,11 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                 hint="Por ejemplo: número de personas o clientes beneficiados, ingresos potenciales, ahorros esperados o reducción de costos."
                 error={errors.impacto?.message}
               >
-                <LongText rows={3} placeholder="Escriba su respuesta" {...form.register('impacto')} />
+                <LongText
+                  rows={3}
+                  placeholder="Escriba su respuesta"
+                  {...form.register('impacto')}
+                />
               </Field>
 
               <Field
@@ -374,37 +427,35 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
               >
                 <div className="space-y-2">
                   <ChoiceOption
+                    name="tieneInteresado"
                     label="Sí"
                     value="true"
-                    {...form.register('tieneInteresado', {
-                      // El radio entrega "true"/"false" como texto; el esquema
-                      // y la columna de Prisma esperan un booleano real.
-                      setValueAs: (value) => value === 'true' || value === true,
-                    })}
+                    checked={tieneInteresado === true}
+                    onChange={() => answerInteresado(true)}
                   />
                   <ChoiceOption
+                    name="tieneInteresado"
                     label="No"
                     value="false"
-                    {...form.register('tieneInteresado', {
-                      setValueAs: (value) => value === 'true' || value === true,
-                    })}
+                    checked={tieneInteresado === false}
+                    onChange={() => answerInteresado(false)}
                   />
                 </div>
               </Field>
 
               {tieneInteresado === true ? (
-                <div className="space-y-3 border-t border-border pt-4">
-                  <p className="text-xs text-muted-foreground">
+                <div className="border-border space-y-3 border-t pt-4">
+                  <p className="text-muted-foreground text-xs">
                     Cuéntanos quién es, para que la mesa de trabajo pueda contactarlo.
                   </p>
 
                   {contacts.fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="space-y-2 rounded-xl border border-border bg-secondary/30 p-3"
+                      className="border-border bg-secondary/30 space-y-2 rounded-xl border p-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.14em] uppercase">
                           Contacto {index + 1}
                         </span>
                         {contacts.fields.length > 1 ? (
@@ -412,7 +463,7 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                             type="button"
                             aria-label={`Quitar contacto ${index + 1}`}
                             onClick={() => contacts.remove(index)}
-                            className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive focus-visible:ring-ring inline-flex size-7 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
                           >
                             <X className="size-3.5" />
                           </button>
@@ -453,14 +504,16 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                   <button
                     type="button"
                     onClick={() => contacts.append(EMPTY_CONTACT)}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/50 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="border-primary/50 text-primary hover:bg-primary/10 focus-visible:ring-ring inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
                     <Plus className="size-4" />
                     Agregar contacto
                   </button>
 
                   {errors.companyContacts?.message ? (
-                    <p className="text-xs text-destructive">{errors.companyContacts.message}</p>
+                    <p className="text-destructive text-xs">
+                      {errors.companyContacts.message}
+                    </p>
                   ) : null}
                 </div>
               ) : null}
@@ -480,13 +533,17 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                 }}
                 className={cn(
                   'flex flex-col items-center gap-3 rounded-xl border border-dashed px-4 py-7 text-center transition-colors',
-                  dragging ? 'border-primary bg-primary/10' : 'border-border bg-secondary/25',
+                  dragging
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-secondary/25',
                 )}
               >
-                <Upload className="size-6 text-primary" />
+                <Upload className="text-primary size-6" />
                 <div className="space-y-1">
                   <p className="text-sm font-semibold">Arrastra archivos aquí</p>
-                  <p className="text-xs text-muted-foreground">o haz clic para seleccionar</p>
+                  <p className="text-muted-foreground text-xs">
+                    o haz clic para seleccionar
+                  </p>
                 </div>
                 <Button
                   type="button"
@@ -511,13 +568,13 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                   {EVIDENCE_TYPES.map((type) => (
                     <span
                       key={type}
-                      className="rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground"
+                      className="border-border bg-card text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-wide"
                     >
                       {type}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Máximo {MAX_EVIDENCE_FILES} archivos de 15 MB cada uno
                 </p>
               </div>
@@ -527,11 +584,11 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                   {evidenceFiles.map((file, index) => (
                     <li
                       key={`${file.name}-${file.size}-${index}`}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2"
+                      className="border-border bg-secondary/30 flex items-center gap-3 rounded-xl border px-3 py-2"
                     >
-                      <Paperclip className="size-4 shrink-0 text-primary" />
+                      <Paperclip className="text-primary size-4 shrink-0" />
                       <span className="min-w-0 flex-1 truncate text-sm">{file.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground shrink-0 text-xs">
                         {formatBytes(file.size)}
                       </span>
                       <button
@@ -540,7 +597,7 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                         onClick={() =>
                           setEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
                         }
-                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive focus-visible:ring-ring inline-flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
                       >
                         <X className="size-3.5" />
                       </button>
@@ -565,22 +622,74 @@ const ChoiceOption = function ChoiceOption({
   return (
     <label
       className={cn(
-        'flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5 text-sm transition-colors hover:border-primary/50',
+        'border-border bg-secondary/30 hover:border-primary/50 flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors',
         'has-checked:border-primary has-checked:bg-primary/10',
-        'has-focus-visible:ring-2 has-focus-visible:ring-ring',
+        'has-focus-visible:ring-ring has-focus-visible:ring-2',
         className,
       )}
     >
       <input type="radio" className="peer sr-only" {...props} />
-      <span className="flex size-4 shrink-0 items-center justify-center rounded-full border border-muted-foreground/60 peer-checked:border-primary peer-checked:bg-primary">
-        <span className="size-1.5 rounded-full bg-primary-foreground opacity-0 peer-checked:opacity-100" />
+      <span className="border-muted-foreground/60 peer-checked:border-primary peer-checked:bg-primary flex size-4 shrink-0 items-center justify-center rounded-full border">
+        <span className="bg-primary-foreground size-1.5 rounded-full opacity-0 peer-checked:opacity-100" />
       </span>
       {label}
     </label>
   );
 };
 
-/** Selección múltiple. Varios checkbox con el mismo `name` — RHF los agrupa en array. */
+/**
+ * Selección múltiple en formato de fila, para opciones con etiquetas largas.
+ * Varios checkbox con el mismo `name` — react-hook-form los agrupa en un array.
+ */
+const MultiChoiceOption = function MultiChoiceOption({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <label
+      className={cn(
+        'border-border bg-secondary/30 hover:border-primary/50 flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors',
+        'has-checked:border-primary has-checked:bg-primary/10',
+        'has-focus-visible:ring-ring has-focus-visible:ring-2',
+        className,
+      )}
+    >
+      <input type="checkbox" className="peer sr-only" {...props} />
+      <span className="border-muted-foreground/60 peer-checked:border-primary peer-checked:bg-primary flex size-4 shrink-0 items-center justify-center rounded border">
+        <Check className="text-primary-foreground size-3 opacity-0 peer-checked:opacity-100" />
+      </span>
+      {label}
+    </label>
+  );
+};
+
+/** `select` nativo con la piel de `TextInput`, más el chevron del diseño. */
+function SelectControl({
+  className,
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="relative">
+      <select
+        className={cn(
+          'border-input bg-secondary/40 text-foreground focus-visible:border-primary focus-visible:ring-ring/40 flex h-11 w-full cursor-pointer appearance-none rounded-xl border px-3 pr-9 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        aria-hidden
+        className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
+      />
+    </div>
+  );
+}
+
+/** Selección múltiple compacta, para catálogos de etiquetas cortas. */
 const MultiChoiceChip = function MultiChoiceChip({
   label,
   className,
@@ -589,9 +698,9 @@ const MultiChoiceChip = function MultiChoiceChip({
   return (
     <label
       className={cn(
-        'inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground',
+        'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors',
         'has-checked:border-primary has-checked:bg-primary/20 has-checked:text-lab',
-        'has-focus-visible:ring-2 has-focus-visible:ring-ring',
+        'has-focus-visible:ring-ring has-focus-visible:ring-2',
         className,
       )}
     >
@@ -616,7 +725,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card/70 p-4 backdrop-blur-xl sm:p-5">
+    <section className="border-border bg-card/70 rounded-2xl border p-4 backdrop-blur-xl sm:p-5">
       <header className="mb-4 flex items-center gap-3">
         <span
           className={cn(
@@ -627,8 +736,10 @@ function SectionCard({
           <Icon className="size-4" />
         </span>
         <div>
-          <h2 className="font-heading text-lg font-semibold leading-tight">{title}</h2>
-          {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+          <h2 className="font-heading text-lg leading-tight font-semibold">{title}</h2>
+          {description ? (
+            <p className="text-muted-foreground text-xs">{description}</p>
+          ) : null}
         </div>
       </header>
       <div className="space-y-5">{children}</div>
@@ -655,7 +766,7 @@ function Field({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">
+        <p className="text-foreground text-sm font-medium">
           <span className="text-muted-foreground">{index}.</span> {label}
           {required ? (
             <span className="text-destructive" aria-hidden>
@@ -665,10 +776,10 @@ function Field({
           ) : null}
           {required ? <span className="sr-only"> (obligatorio)</span> : null}
         </p>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+        {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
       </div>
       {children}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-destructive text-xs">{error}</p> : null}
     </div>
   );
 }
@@ -679,9 +790,16 @@ function Field({
  * altos, así que los revisten aquí en vez de cambiar el componente global.
  */
 function TextInput({ className, ...props }: React.ComponentProps<typeof Input>) {
-  return <Input className={cn('h-11 rounded-xl bg-secondary/40 px-3', className)} {...props} />;
+  return (
+    <Input className={cn('bg-secondary/40 h-11 rounded-xl px-3', className)} {...props} />
+  );
 }
 
 function LongText({ className, ...props }: React.ComponentProps<typeof Textarea>) {
-  return <Textarea className={cn('rounded-xl bg-secondary/40 px-3 py-2.5', className)} {...props} />;
+  return (
+    <Textarea
+      className={cn('bg-secondary/40 rounded-xl px-3 py-2.5', className)}
+      {...props}
+    />
+  );
 }

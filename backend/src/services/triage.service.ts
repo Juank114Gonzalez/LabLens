@@ -93,8 +93,10 @@ function buildInitiativeBlock(
       areaDelSolicitante: omitEmpty(initiative.areaSolicitante),
       necesidad: initiative.necesidad,
       solucionPropuesta: omitEmpty(initiative.solucionPropuesta),
-      impactaPrincipalmenteA: omitEmpty(initiative.impactaA),
-      productoRelacionado: omitEmpty(initiative.productoRelacionado),
+      impactaPrincipalmenteA: initiative.impactaA.length ? initiative.impactaA : undefined,
+      productosRelacionados: initiative.productoRelacionado.length
+        ? initiative.productoRelacionado
+        : undefined,
       beneficiosEsperados: initiative.beneficios.length ? initiative.beneficios : undefined,
       urgencia: initiative.urgencia,
       impacto: omitEmpty(initiative.impacto),
