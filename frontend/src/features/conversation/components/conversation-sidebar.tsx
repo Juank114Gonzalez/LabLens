@@ -27,11 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import {
-  canAccessAdmin,
-  canAccessChat,
-  canAccessEvaluations,
-} from '@/features/auth/lib/roles';
+import { canAccessAdmin, canAccessEvaluations } from '@/features/auth/lib/roles';
 import { Logo } from '@/shared/components/logo';
 import { useUiStore } from '@/stores/ui.store';
 import { cn } from '@/lib/utils';
@@ -57,12 +53,10 @@ export function ConversationSidebar() {
       { href: routes.initiatives, label: 'Todas las iniciativas', icon: ClipboardList },
     );
 
+    // Crear una evaluación vive dentro de Evaluaciones, no como entrada aparte:
+    // elegir la iniciativa es el primer paso del mismo flujo.
     if (canAccessEvaluations(role)) {
       items.push({ href: routes.evaluations, label: 'Evaluaciones', icon: MessageSquare });
-    }
-
-    if (canAccessChat(role)) {
-      items.push({ href: routes.chatNew, label: 'Nueva evaluación', icon: MessageSquare });
     }
 
     if (canAccessAdmin(role)) {

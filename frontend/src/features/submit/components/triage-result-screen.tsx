@@ -46,9 +46,39 @@ export function TriageResultScreen({ result, onSubmitAnother }: Props) {
           </div>
         </div>
 
-        {triage ? (
+        {triage?.needsReview ? (
+          /* El modelo no pudo clasificar (texto sin contenido, o dudó demasiado).
+             Se le dice al usuario qué faltó en vez de mostrarle una categoría
+             inventada — y ninguna mesa de trabajo fue notificada. */
+          <Card className="border-border/70 shadow-none">
+            <CardHeader className="space-y-2">
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <Clock className="size-4 text-warning" />
+                Pendiente de revisión
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                No pudimos clasificar la iniciativa automáticamente, así que la revisará una
+                persona del Laboratorio Digital antes de enrutarla.
+              </p>
+              {triage.reviewReason ? (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                    Qué faltó
+                  </p>
+                  <p className="text-muted-foreground">{triage.reviewReason}</p>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : triage && triage.classification && triage.workTable ? (
           <Card className="border-border/70 shadow-none">
             <CardHeader className="space-y-3">
+              {/* La confianza del triage es un dato interno: se sigue guardando en
+                  `triageConfidence` y decidiendo con ella si la iniciativa va a
+                  revisión, pero no se le muestra a quien envía — un porcentaje
+                  sin contexto invita a discutir el número en vez de la respuesta. */}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant="secondary"
@@ -59,9 +89,6 @@ export function TriageResultScreen({ result, onSubmitAnother }: Props) {
                 >
                   {triage.classification.nombre}
                 </Badge>
-                <span className="text-muted-foreground text-xs">
-                  Confianza del análisis: {Math.round(triage.confidence * 100)}%
-                </span>
               </div>
               <CardTitle className="flex items-center gap-2 text-base font-medium">
                 {triage.isLabScope ? (

@@ -14,7 +14,6 @@ export const routes = {
   initiative: (id: string) => `/initiatives/${id}`,
   initiativeEdit: (id: string) => `/initiatives/${id}/edit`,
   initiativeEvaluations: (id: string) => `/initiatives/${id}/evaluations`,
-  chatNew: '/chat/new',
   chat: (id: string) => `/chat/${id}`,
   evaluations: '/evaluations',
   evaluation: (id: string) => `/evaluations/${id}`,

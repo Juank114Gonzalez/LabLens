@@ -233,8 +233,10 @@ export async function applyTriageResult(
   id: string,
   data: {
     status: InitiativeStatus;
-    triageClassificationId: string;
-    triageWorkTableId: string;
+    // Nulos cuando el triage manda la iniciativa a revisión manual: no hay
+    // clasificación que guardar, pero sí razonamiento y confianza.
+    triageClassificationId: string | null;
+    triageWorkTableId: string | null;
     triageReasoning: string;
     triageConfidence: number;
     triagedAt: Date;

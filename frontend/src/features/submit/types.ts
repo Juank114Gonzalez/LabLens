@@ -20,7 +20,6 @@ export type PublicSubmissionPayload = {
   productoRelacionado: string[];
   beneficios: string[];
   impacto?: string;
-  urgencia: string;
   tieneInteresado: boolean;
   companyContacts: CompanyContact[];
 };
@@ -30,10 +29,13 @@ export type TriageResult = {
   status: InitiativeStatus;
   isLabScope: boolean;
   confidence: number;
-  classification: { id: string; nombre: string; descripcion: string };
-  classificationReasoning: string;
-  workTable: { id: string; nombre: string; descripcion: string };
-  workTableReasoning: string;
+  /** El modelo no pudo clasificar, o dudó demasiado: la revisa una persona. */
+  needsReview: boolean;
+  reviewReason: string | null;
+  classification: { id: string; nombre: string; descripcion: string } | null;
+  classificationReasoning: string | null;
+  workTable: { id: string; nombre: string; descripcion: string } | null;
+  workTableReasoning: string | null;
   notificationSent: boolean;
 };
 

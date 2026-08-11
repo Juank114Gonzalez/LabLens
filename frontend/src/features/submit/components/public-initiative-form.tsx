@@ -2,10 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFieldArray, useForm, type FieldPath } from 'react-hook-form';
+import {
+  useFieldArray,
+  useForm,
+  type FieldErrors,
+  type FieldPath,
+} from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import {
+  ArrowLeft,
   ArrowRight,
   Building2,
   Check,
@@ -29,7 +35,6 @@ import {
   BENEFIT_OPTIONS,
   IMPACT_TARGETS,
   RELATED_PRODUCTS,
-  URGENCY_LEVELS,
   publicInitiativeFormSchema,
   type PublicInitiativeFormValues,
 } from '@/features/submit/schemas/public-initiative.schema';
@@ -62,11 +67,48 @@ const STEP_TITLES = [
 const STEP_FIELDS: FieldPath<PublicInitiativeFormValues>[][] = [
   ['submitterName', 'areaSolicitante', 'submitterEmail'],
   ['nombre', 'necesidad', 'solucionPropuesta'],
-  ['impactaA', 'productoRelacionado', 'beneficios', 'impacto', 'urgencia'],
+  ['impactaA', 'productoRelacionado', 'beneficios', 'impacto'],
   ['tieneInteresado', 'companyContacts'],
 ];
 
 const EMPTY_CONTACT = { empresa: '', contacto: '', cargo: '', correo: '', telefono: '' };
+
+/** Campos de selección múltiple, todos guardados como arreglo de cadenas. */
+type MultiSelectField = 'impactaA' | 'productoRelacionado' | 'beneficios';
+
+/**
+ * Áreas ordenadas alfabéticamente solo para mostrarlas. El catálogo conserva su
+ * orden original para poder cotejarlo contra el validador del backend, y se
+ * ordena aquí con `localeCompare` en español para que las tildes queden bien y
+ * una nueva área entre en su sitio sin que nadie tenga que acordarse.
+ */
+const AREA_OPTIONS_SORTED = [...AREA_OPTIONS].sort((a, b) => a.localeCompare(b, 'es'));
+
+/**
+ * Bloquea el envío implícito del formulario con Enter.
+ *
+ * HTML envía el formulario cuando se pulsa Enter con el foco en un input —
+ * incluidos los checkbox y radio ocultos de las opciones. Eso disparaba el
+ * validador de envío desde un paso intermedio y mostraba "Revisa los campos
+ * obligatorios antes de enviar" en medio del paso 3.
+ *
+ * El envío es siempre explícito con el botón, así que aquí Enter nunca debe
+ * enviar. Sobre una casilla se convierte en lo que el usuario esperaba: la
+ * marca, igual que la barra espaciadora.
+ */
+function blockImplicitSubmit(event: React.KeyboardEvent<HTMLFormElement>) {
+  if (event.key !== 'Enter') return;
+
+  const target = event.target as HTMLElement;
+  // En un textarea Enter es un salto de línea y nunca envía: no se toca.
+  if (target instanceof HTMLTextAreaElement) return;
+  if (!(target instanceof HTMLInputElement)) return;
+
+  event.preventDefault();
+  if (target.type === 'checkbox' || target.type === 'radio') {
+    target.click();
+  }
+}
 
 type Props = {
   defaultSourceType: SourceType;
@@ -76,6 +118,8 @@ type Props = {
 export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  /** Paso más avanzado alcanzado; habilita saltar hacia adelante en el stepper. */
+  const [furthestStep, setFurthestStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -97,7 +141,6 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
       productoRelacionado: [],
       beneficios: [],
       impacto: '',
-      urgencia: undefined,
       tieneInteresado: undefined,
       companyContacts: [],
     },
@@ -107,6 +150,35 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
   const contacts = useFieldArray({ control: form.control, name: 'companyContacts' });
   const errors = form.formState.errors;
   const tieneInteresado = form.watch('tieneInteresado');
+  const impactaA = form.watch('impactaA');
+  const productoRelacionado = form.watch('productoRelacionado');
+  const beneficios = form.watch('beneficios');
+
+  /**
+   * Las multiselecciones son controladas en vez de `register` sobre varios
+   * checkbox con el mismo `name`.
+   *
+   * Ese mecanismo de react-hook-form guarda un arreglo de refs a los inputs, y
+   * aquí los pasos se montan y desmontan al navegar: al volver a un paso las
+   * refs quedan obsoletas y la selección se pierde o se duplica. Derivar el
+   * `checked` del valor del formulario elimina ese estado intermedio.
+   */
+  function toggleValue(field: MultiSelectField, option: string) {
+    const current = (form.getValues(field) ?? []) as string[];
+    const next = current.includes(option)
+      ? current.filter((item) => item !== option)
+      : [...current, option];
+
+    // El cast es necesario porque `PathValue` de react-hook-form no puede
+    // expresar la unión de los tres campos. En runtime es correcto: las opciones
+    // salen de los mismos catálogos que valida el esquema.
+    form.setValue(field, next as never, {
+      shouldDirty: true,
+      // Solo revalida si el campo ya mostró error, para no marcar en rojo
+      // mientras el usuario todavía está eligiendo.
+      shouldValidate: Boolean(form.formState.errors[field]),
+    });
+  }
 
   // Al responder "Sí" se abre una primera ficha de contacto, para que el campo
   // no quede como una sección vacía que el usuario tenga que descubrir.
@@ -142,14 +214,19 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     setEvidenceFiles(next);
   }
 
+  function goToStep(target: number) {
+    setStep(target);
+    setFurthestStep((current) => Math.max(current, target));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function goNext() {
     const valid = await form.trigger(STEP_FIELDS[step - 1], { shouldFocus: true });
     if (!valid) {
       toast.error('Revisa los campos marcados antes de continuar');
       return;
     }
-    setStep((current) => Math.min(current + 1, TOTAL_STEPS));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    goToStep(Math.min(step + 1, TOTAL_STEPS));
   }
 
   function goBack() {
@@ -157,11 +234,47 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
       router.push(routes.home);
       return;
     }
-    setStep((current) => current - 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Volver nunca valida: el usuario puede retroceder con el paso a medias.
+    goToStep(step - 1);
   }
 
-  function onInvalid() {
+  /**
+   * Salto directo desde el stepper. Hacia atrás siempre se permite; hacia
+   * adelante solo a pasos ya visitados, y validando el actual primero, para que
+   * nadie se salte preguntas obligatorias usando el indicador como atajo.
+   */
+  async function jumpToStep(target: number) {
+    if (target === step) return;
+    if (target < step) {
+      goToStep(target);
+      return;
+    }
+    if (target > furthestStep) return;
+
+    const valid = await form.trigger(STEP_FIELDS[step - 1], { shouldFocus: true });
+    if (!valid) {
+      toast.error('Revisa los campos marcados antes de continuar');
+      return;
+    }
+    goToStep(target);
+  }
+
+  /**
+   * Al enviar se valida el formulario completo, y el campo que falla puede estar
+   * en un paso que ya no se ve. Se navega hasta él en vez de dejar al usuario
+   * con un aviso y sin pista de dónde está el problema.
+   */
+  function onInvalid(fieldErrors: FieldErrors<PublicInitiativeFormValues>) {
+    const firstBadStep = STEP_FIELDS.findIndex((fields) =>
+      fields.some((field) => Boolean(fieldErrors[field as keyof typeof fieldErrors])),
+    );
+
+    if (firstBadStep >= 0 && firstBadStep + 1 !== step) {
+      goToStep(firstBadStep + 1);
+      toast.error(`Falta responder algo en el paso ${firstBadStep + 1}`);
+      return;
+    }
+
     toast.error('Revisa los campos obligatorios antes de enviar');
   }
 
@@ -175,6 +288,10 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
    */
   function answerInteresado(value: boolean) {
     form.setValue('tieneInteresado', value, { shouldValidate: true, shouldDirty: true });
+
+    // Al responder "No" se descartan las fichas que hayan quedado de un "Sí"
+    // previo. El esquema ya no las valida, pero dejarlas ensucia el envío.
+    if (!value) contacts.replace([]);
   }
 
   async function onSubmit(values: PublicInitiativeFormValues) {
@@ -196,41 +313,75 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
     }
   }
 
-  const footer =
-    step < TOTAL_STEPS ? (
+  const footer = (
+    <div className="flex items-center gap-2">
+      {/* "Atrás" siempre visible, incluso en el paso 1, donde sale del formulario:
+          la flecha de la cabecera es fácil de no ver en móvil. */}
       <Button
         type="button"
         size="lg"
-        onClick={goNext}
-        className="cta-glow h-12 w-full rounded-xl text-base font-semibold"
-      >
-        Continuar
-        <ArrowRight className="size-4" />
-      </Button>
-    ) : (
-      <Button
-        type="submit"
-        form="public-initiative-form"
-        size="lg"
+        variant="secondary"
+        onClick={goBack}
         disabled={submitting}
-        className="cta-glow h-12 w-full rounded-xl text-base font-semibold"
+        className="h-12 shrink-0 rounded-xl px-4 text-base font-medium"
       >
-        {submitting ? 'Analizando iniciativa…' : 'Enviar iniciativa'}
-        {!submitting ? <ArrowRight className="size-4" /> : null}
+        <ArrowLeft className="size-4" />
+        Atrás
       </Button>
-    );
+
+      {/*
+        Ambos botones son `type="button"` y llevan `key` distinta a propósito.
+
+        Con `type="submit"` en el último paso, React reutilizaba el mismo nodo
+        del DOM al pasar del paso 3 al 4 y solo le cambiaba el `type`. Como
+        `goNext` es asíncrono, ese cambio llegaba antes de que el navegador
+        resolviera la acción por defecto del clic, y el clic de "Continuar"
+        terminaba enviando el formulario al aterrizar en el paso final.
+
+        Enviando por `onClick` no queda ningún botón de submit, y la `key`
+        distinta obliga a React a montar un nodo nuevo en vez de reciclarlo.
+      */}
+      {step < TOTAL_STEPS ? (
+        <Button
+          key="wizard-next"
+          type="button"
+          size="lg"
+          onClick={goNext}
+          className="cta-glow h-12 flex-1 rounded-xl text-base font-semibold"
+        >
+          Continuar
+          <ArrowRight className="size-4" />
+        </Button>
+      ) : (
+        <Button
+          key="wizard-submit"
+          type="button"
+          size="lg"
+          disabled={submitting}
+          onClick={form.handleSubmit(onSubmit, onInvalid)}
+          className="cta-glow h-12 flex-1 rounded-xl text-base font-semibold"
+        >
+          {submitting ? 'Analizando iniciativa…' : 'Enviar iniciativa'}
+          {!submitting ? <ArrowRight className="size-4" /> : null}
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <SubmitWizardShell
       step={step}
       title={STEP_TITLES[step - 1]}
       onBack={goBack}
+      furthestStep={furthestStep}
+      onStepSelect={jumpToStep}
       footer={footer}
     >
       <form
         id="public-initiative-form"
         className="space-y-5"
         onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+        onKeyDown={blockImplicitSubmit}
       >
         {step === 1 ? (
           <SectionCard icon={User} title="Quién envía">
@@ -256,7 +407,7 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                 <option value="" disabled>
                   Selecciona tu área
                 </option>
-                {AREA_OPTIONS.map((option) => (
+                {AREA_OPTIONS_SORTED.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -336,8 +487,8 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                     <MultiChoiceOption
                       key={option}
                       label={option}
-                      value={option}
-                      {...form.register('impactaA')}
+                      checked={impactaA.includes(option)}
+                      onChange={() => toggleValue('impactaA', option)}
                     />
                   ))}
                 </div>
@@ -355,8 +506,8 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                     <MultiChoiceOption
                       key={option}
                       label={option}
-                      value={option}
-                      {...form.register('productoRelacionado')}
+                      checked={productoRelacionado.includes(option)}
+                      onChange={() => toggleValue('productoRelacionado', option)}
                     />
                   ))}
                 </div>
@@ -375,8 +526,8 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                     <MultiChoiceChip
                       key={option}
                       label={option}
-                      value={option}
-                      {...form.register('beneficios')}
+                      checked={beneficios.includes(option)}
+                      onChange={() => toggleValue('beneficios', option)}
                     />
                   ))}
                 </div>
@@ -394,24 +545,6 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                   {...form.register('impacto')}
                 />
               </Field>
-
-              <Field
-                index={11}
-                label="¿Qué tan urgente consideras esta iniciativa?"
-                required
-                error={errors.urgencia?.message}
-              >
-                <div className="space-y-2">
-                  {URGENCY_LEVELS.map((option) => (
-                    <ChoiceOption
-                      key={option}
-                      label={option}
-                      value={option}
-                      {...form.register('urgencia')}
-                    />
-                  ))}
-                </div>
-              </Field>
             </SectionCard>
           </>
         ) : null}
@@ -420,7 +553,7 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
           <>
             <SectionCard icon={Building2} title="Interesados">
               <Field
-                index={12}
+                index={11}
                 label="¿Existe algún cliente, aliado o área interesada?"
                 required
                 error={errors.tieneInteresado?.message}
@@ -469,34 +602,56 @@ export function PublicInitiativeForm({ defaultSourceType, onSubmitted }: Props) 
                           </button>
                         ) : null}
                       </div>
+                      {/* Cada campo pinta su propio error: sin esto el envío se
+                          bloqueaba con un aviso y nada marcado en pantalla. */}
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <TextInput
-                          placeholder="Empresa o área"
-                          aria-label="Empresa o área"
-                          {...form.register(`companyContacts.${index}.empresa`)}
-                        />
-                        <TextInput
-                          placeholder="Contacto"
-                          aria-label="Contacto"
-                          {...form.register(`companyContacts.${index}.contacto`)}
-                        />
-                        <TextInput
-                          placeholder="Cargo"
-                          aria-label="Cargo"
-                          {...form.register(`companyContacts.${index}.cargo`)}
-                        />
-                        <TextInput
-                          type="email"
-                          placeholder="Correo"
-                          aria-label="Correo"
-                          {...form.register(`companyContacts.${index}.correo`)}
-                        />
-                        <TextInput
-                          placeholder="Teléfono"
-                          aria-label="Teléfono"
+                        <ContactField
+                          error={errors.companyContacts?.[index]?.empresa?.message}
+                        >
+                          <TextInput
+                            placeholder="Empresa o área"
+                            aria-label="Empresa o área"
+                            {...form.register(`companyContacts.${index}.empresa`)}
+                          />
+                        </ContactField>
+                        <ContactField
+                          error={errors.companyContacts?.[index]?.contacto?.message}
+                        >
+                          <TextInput
+                            placeholder="Contacto"
+                            aria-label="Contacto"
+                            {...form.register(`companyContacts.${index}.contacto`)}
+                          />
+                        </ContactField>
+                        <ContactField
+                          error={errors.companyContacts?.[index]?.cargo?.message}
+                        >
+                          <TextInput
+                            placeholder="Cargo"
+                            aria-label="Cargo"
+                            {...form.register(`companyContacts.${index}.cargo`)}
+                          />
+                        </ContactField>
+                        <ContactField
+                          error={errors.companyContacts?.[index]?.correo?.message}
+                        >
+                          <TextInput
+                            type="email"
+                            placeholder="Correo"
+                            aria-label="Correo"
+                            {...form.register(`companyContacts.${index}.correo`)}
+                          />
+                        </ContactField>
+                        <ContactField
                           className="sm:col-span-2"
-                          {...form.register(`companyContacts.${index}.telefono`)}
-                        />
+                          error={errors.companyContacts?.[index]?.telefono?.message}
+                        >
+                          <TextInput
+                            placeholder="Teléfono"
+                            aria-label="Teléfono"
+                            {...form.register(`companyContacts.${index}.telefono`)}
+                          />
+                        </ContactField>
                       </div>
                     </div>
                   ))}
@@ -645,7 +800,7 @@ const MultiChoiceOption = function MultiChoiceOption({
   label,
   className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & { label: string }) {
   return (
     <label
       className={cn(
@@ -694,7 +849,7 @@ const MultiChoiceChip = function MultiChoiceChip({
   label,
   className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & { label: string }) {
   return (
     <label
       className={cn(
@@ -710,6 +865,23 @@ const MultiChoiceChip = function MultiChoiceChip({
     </label>
   );
 };
+
+function ContactField({
+  error,
+  className,
+  children,
+}: {
+  error?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn('space-y-1', className)}>
+      {children}
+      {error ? <p className="text-destructive text-xs">{error}</p> : null}
+    </div>
+  );
+}
 
 function SectionCard({
   icon: Icon,

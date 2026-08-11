@@ -17,20 +17,31 @@ type Props = {
   onBack: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Paso más avanzado alcanzado: hasta ahí se puede saltar hacia adelante. */
+  furthestStep?: number;
+  onStepSelect?: (step: number) => void;
 };
 
-export function SubmitWizardShell({ step, title, onBack, children, footer }: Props) {
+export function SubmitWizardShell({
+  step,
+  title,
+  onBack,
+  children,
+  footer,
+  furthestStep = step,
+  onStepSelect,
+}: Props) {
   return (
     <div className="relative min-h-svh">
       <div className="lab-grid pointer-events-none fixed inset-0 opacity-30" />
 
-      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-xl">
+      <header className="border-border bg-background/85 sticky top-0 z-20 border-b backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-5 py-3">
           <button
             type="button"
             onClick={onBack}
             aria-label={step === 1 ? 'Volver al inicio' : 'Volver al paso anterior'}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="border-border bg-card text-foreground hover:bg-accent focus-visible:ring-ring inline-flex size-9 shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:outline-none"
           >
             <ArrowLeft className="size-4" />
           </button>
@@ -39,14 +50,14 @@ export function SubmitWizardShell({ step, title, onBack, children, footer }: Pro
         </div>
 
         <div className="mx-auto w-full max-w-2xl px-5 pb-4">
-          <Stepper current={step} />
+          <Stepper current={step} furthest={furthestStep} onSelect={onStepSelect} />
         </div>
       </header>
 
-      <main className="relative mx-auto w-full max-w-2xl px-5 pb-40 pt-7">
+      <main className="relative mx-auto w-full max-w-2xl px-5 pt-7 pb-40">
         <div className="mb-6 space-y-1">
           <h1 className="font-heading text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Paso {step} de {TOTAL_STEPS}
           </p>
         </div>
@@ -54,7 +65,7 @@ export function SubmitWizardShell({ step, title, onBack, children, footer }: Pro
       </main>
 
       {footer ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl">
+        <div className="border-border bg-background/90 fixed inset-x-0 bottom-0 z-20 border-t backdrop-blur-xl">
           <div className="mx-auto w-full max-w-2xl px-5 py-3">{footer}</div>
         </div>
       ) : null}
@@ -62,13 +73,24 @@ export function SubmitWizardShell({ step, title, onBack, children, footer }: Pro
   );
 }
 
-function Stepper({ current }: { current: number }) {
+function Stepper({
+  current,
+  furthest,
+  onSelect,
+}: {
+  current: number;
+  furthest: number;
+  onSelect?: (step: number) => void;
+}) {
   return (
     <ol className="flex items-start" aria-label="Progreso del formulario">
       {WIZARD_STEPS.map((label, index) => {
         const stepNumber = index + 1;
         const isDone = stepNumber < current;
         const isCurrent = stepNumber === current;
+        // Solo se puede saltar a pasos ya alcanzados: hacia adelante el
+        // formulario valida el paso actual antes de dejar avanzar.
+        const canJump = Boolean(onSelect) && !isCurrent && stepNumber <= furthest;
 
         return (
           <li
@@ -86,9 +108,14 @@ function Stepper({ current }: { current: number }) {
                   )}
                 />
               ) : null}
-              <span
+              <button
+                type="button"
+                disabled={!canJump}
+                onClick={canJump ? () => onSelect?.(stepNumber) : undefined}
+                aria-label={`Paso ${stepNumber}: ${label}`}
                 className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
+                  'focus-visible:ring-ring flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                  canJump ? 'hover:border-primary cursor-pointer' : 'cursor-default',
                   isCurrent && 'border-primary bg-primary text-primary-foreground',
                   // El estado "hecho" pesa más que el pendiente: en un wizard de
                   // 4 pasos el avance es la información principal.
@@ -97,7 +124,7 @@ function Stepper({ current }: { current: number }) {
                 )}
               >
                 {isDone ? <Check className="size-4" /> : stepNumber}
-              </span>
+              </button>
             </div>
             <span
               className={cn(

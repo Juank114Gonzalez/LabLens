@@ -18,12 +18,21 @@ import { notifyWorkTable } from './notification.service.js';
  */
 const LAB_SCOPE_CLASSIFICATIONS = ['Innovación disruptiva', 'Innovación adyacente'];
 
+/**
+ * Por debajo de este umbral la decisión del modelo es, según su propia escala,
+ * poco más que una suposición. Enrutar eso a un área le hace perder tiempo, así
+ * que se trata igual que un "no clasificable": va a revisión manual.
+ */
+export const MIN_TRIAGE_CONFIDENCE = 0.4;
+
 const triageSchema = z.object({
-  classificationId: z.string().uuid(),
-  classificationReasoning: z.string().trim().min(1),
-  workTableId: z.string().uuid(),
-  workTableReasoning: z.string().trim().min(1),
+  clasificable: z.boolean(),
+  classificationId: z.string().uuid().nullable(),
+  classificationReasoning: z.string().trim().min(1).nullable(),
+  workTableId: z.string().uuid().nullable(),
+  workTableReasoning: z.string().trim().min(1).nullable(),
   confidence: z.number().min(0).max(1),
+  motivoNoClasificable: z.string().trim().min(1).nullable(),
 });
 
 export type TriageResult = {
@@ -31,10 +40,14 @@ export type TriageResult = {
   status: InitiativeStatus;
   isLabScope: boolean;
   confidence: number;
-  classification: { id: string; nombre: string; descripcion: string };
-  classificationReasoning: string;
-  workTable: { id: string; nombre: string; descripcion: string };
-  workTableReasoning: string;
+  /** Cuando es true no hay clasificación: un evaluador debe revisarla a mano. */
+  needsReview: boolean;
+  /** Qué le faltó a la iniciativa para poder clasificarse. Solo con needsReview. */
+  reviewReason: string | null;
+  classification: { id: string; nombre: string; descripcion: string } | null;
+  classificationReasoning: string | null;
+  workTable: { id: string; nombre: string; descripcion: string } | null;
+  workTableReasoning: string | null;
   notificationSent: boolean;
 };
 
@@ -49,6 +62,48 @@ function normalize(value: string): string {
 function isLabScopeClassification(nombre: string): boolean {
   const normalized = normalize(nombre);
   return LAB_SCOPE_CLASSIFICATIONS.some((item) => normalize(item) === normalized);
+}
+
+type TriagePick = z.infer<typeof triageSchema>;
+
+/**
+ * Única regla que decide si una iniciativa se enruta automáticamente o pasa a
+ * revisión manual. Es una función pura y exportada a propósito: es la lógica que
+ * más importa acertar y así puede probarse sin llamar al modelo.
+ *
+ * Devuelve `null` cuando el triage se puede aplicar tal cual.
+ */
+export function resolveTriageReview(
+  picked: Pick<TriagePick, 'clasificable' | 'confidence' | 'motivoNoClasificable'>,
+  catalogPickIsValid: boolean,
+): { reason: string } | null {
+  // Este caso va PRIMERO a propósito. Cuando el modelo declara que no puede
+  // clasificar, devuelve los ids en null — que es exactamente lo que se le pidió.
+  // Evaluar antes la validez del catálogo hacía que ese null se leyera como un
+  // id inventado y se reportara un motivo falso, culpando al modelo de un fallo
+  // que no cometió y ocultando la razón real que sí había explicado.
+  if (!picked.clasificable) {
+    return {
+      reason:
+        picked.motivoNoClasificable ??
+        'El contenido no permite identificar el problema ni la solución propuesta.',
+    };
+  }
+
+  if (!catalogPickIsValid) {
+    // Aquí sí: el modelo dijo que podía clasificar pero devolvió un id que no
+    // existe. Antes esto lanzaba 502 y el usuario perdía el envío; ahora la
+    // iniciativa se conserva y la revisa una persona.
+    return { reason: 'El triage devolvió una clasificación fuera del catálogo.' };
+  }
+
+  if (picked.confidence < MIN_TRIAGE_CONFIDENCE) {
+    return {
+      reason: `Confianza insuficiente para clasificar automáticamente (${picked.confidence.toFixed(2)}).`,
+    };
+  }
+
+  return null;
 }
 
 function parseTriageJson(raw: string) {
@@ -98,7 +153,7 @@ function buildInitiativeBlock(
         ? initiative.productoRelacionado
         : undefined,
       beneficiosEsperados: initiative.beneficios.length ? initiative.beneficios : undefined,
-      urgencia: initiative.urgencia,
+      urgencia: omitEmpty(initiative.urgencia),
       impacto: omitEmpty(initiative.impacto),
       tieneInteresado: initiative.tieneInteresado ?? undefined,
       expectativaSolucion: omitEmpty(initiative.expectativaSolucion),
@@ -155,23 +210,61 @@ export async function runTriage(initiativeId: string): Promise<TriageResult> {
   const picked = parseTriageJson(await generatePlainText(prompt));
 
   const classification = classifications.find((item) => item.id === picked.classificationId);
-  if (!classification) {
-    throw new AppError('El triage seleccionó una clasificación inexistente', 502);
+  const workTable = workTables.find((item) => item.id === picked.workTableId);
+
+  /*
+   * Se manda a revisión manual en cuatro casos, no solo cuando el modelo lo pide:
+   * también si dudó demasiado, o si devolvió un id que no existe en el catálogo.
+   * Antes ese último caso lanzaba un 502 y el usuario perdía el envío; ahora la
+   * iniciativa se conserva y la revisa una persona.
+   */
+  const review = resolveTriageReview(picked, Boolean(classification && workTable));
+
+  if (review) {
+    const reviewReason = review.reason;
+
+    await applyTriageResult(initiative.id, {
+      status: InitiativeStatus.UNDER_REVIEW,
+      triageClassificationId: null,
+      triageWorkTableId: null,
+      triageReasoning: reviewReason,
+      triageConfidence: picked.confidence,
+      triagedAt: new Date(),
+    });
+
+    // No se notifica a ninguna mesa: enrutar una decisión que el modelo no
+    // sostiene le hace perder tiempo al área y erosiona la confianza en el Lab.
+    return {
+      initiativeId: initiative.id,
+      status: InitiativeStatus.UNDER_REVIEW,
+      isLabScope: false,
+      confidence: picked.confidence,
+      needsReview: true,
+      reviewReason,
+      classification: null,
+      classificationReasoning: null,
+      workTable: null,
+      workTableReasoning: null,
+      notificationSent: false,
+    };
   }
 
-  const workTable = workTables.find((item) => item.id === picked.workTableId);
-  if (!workTable) {
-    throw new AppError('El triage seleccionó una mesa de trabajo inexistente', 502);
+  // Inalcanzable en la práctica: `brokenCatalogPick` ya retornó arriba. Está para
+  // que TypeScript estreche los tipos, que no lo deduce a través del booleano.
+  if (!classification || !workTable) {
+    throw new AppError('El triage devolvió una clasificación fuera del catálogo', 502);
   }
 
   const isLabScope = isLabScopeClassification(classification.nombre);
   const triagedAt = new Date();
+  const classificationReasoning = picked.classificationReasoning ?? '';
+  const workTableReasoning = picked.workTableReasoning ?? '';
 
   await applyTriageResult(initiative.id, {
     status: isLabScope ? InitiativeStatus.TRIAGED_LAB : InitiativeStatus.TRIAGED_EXTERNAL,
     triageClassificationId: classification.id,
     triageWorkTableId: workTable.id,
-    triageReasoning: picked.classificationReasoning,
+    triageReasoning: classificationReasoning,
     triageConfidence: picked.confidence,
     triagedAt,
   });
@@ -195,8 +288,8 @@ export async function runTriage(initiativeId: string): Promise<TriageResult> {
       },
       triage: {
         classificationName: classification.nombre,
-        classificationReasoning: picked.classificationReasoning,
-        workTableReasoning: picked.workTableReasoning,
+        classificationReasoning,
+        workTableReasoning,
         confidence: picked.confidence,
       },
     });
@@ -211,18 +304,20 @@ export async function runTriage(initiativeId: string): Promise<TriageResult> {
     status: isLabScope ? InitiativeStatus.TRIAGED_LAB : InitiativeStatus.TRIAGED_EXTERNAL,
     isLabScope,
     confidence: picked.confidence,
+    needsReview: false,
+    reviewReason: null,
     classification: {
       id: classification.id,
       nombre: classification.nombre,
       descripcion: classification.descripcion,
     },
-    classificationReasoning: picked.classificationReasoning,
+    classificationReasoning,
     workTable: {
       id: workTable.id,
       nombre: workTable.nombre,
       descripcion: workTable.descripcion,
     },
-    workTableReasoning: picked.workTableReasoning,
+    workTableReasoning,
     notificationSent,
   };
 }

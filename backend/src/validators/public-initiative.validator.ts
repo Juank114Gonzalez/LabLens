@@ -55,15 +55,6 @@ export const BENEFIT_OPTIONS = [
   'Otras',
 ] as const;
 
-/** Pregunta 11 — escala 1 a 5, se guarda como texto con su glosa. */
-export const URGENCY_LEVELS = [
-  '1 - Nada urgente (puede abordarse en más de 12 meses)',
-  '2 - Poco urgente (debería abordarse entre 6 y 12 meses)',
-  '3 - Urgencia media (debería abordarse entre 3 y 6 meses)',
-  '4 - Urgente (debería abordarse entre 1 y 3 meses)',
-  '5 - Muy urgente (requiere atención en menos de 1 mes)',
-] as const;
-
 /**
  * Envío público (formulario de 12 preguntas).
  *
@@ -98,8 +89,8 @@ export const publicInitiativeSchema = z
     beneficios: z.array(z.enum(BENEFIT_OPTIONS)).default([]),
     impacto: optionalText(500),
 
-    // 11, 12
-    urgencia: z.enum(URGENCY_LEVELS),
+    // 11 — la urgencia dejó de preguntarse en el canal público; la columna sigue
+    // existiendo porque el formulario interno sí la diligencia.
     tieneInteresado: z.boolean(),
 
     // Solo se piden cuando `tieneInteresado` es true.

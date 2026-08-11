@@ -11,6 +11,7 @@ import {
   deleteEvaluation,
   listEvaluations,
 } from '@/features/evaluation/services/evaluation.service';
+import { NewEvaluationDialog } from '@/features/evaluation/components/new-evaluation-dialog';
 import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { useAuthStore } from '@/stores/auth.store';
@@ -54,9 +55,7 @@ export default function EvaluationsPage() {
               {isAdmin ? ' Como admin puedes eliminarlas.' : ''}
             </p>
           </div>
-          <Button asChild>
-            <Link href={routes.chatNew}>Nueva evaluación</Link>
-          </Button>
+          <NewEvaluationDialog trigger={<Button type="button">Nueva evaluación</Button>} />
         </div>
 
         {query.isLoading ? (
@@ -69,9 +68,9 @@ export default function EvaluationsPage() {
             title="Aún no hay evaluaciones"
             description="Selecciona una iniciativa registrada para iniciar la entrevista con el Lente de Innovación."
             action={
-              <Button asChild>
-                <Link href={routes.chatNew}>Seleccionar iniciativa</Link>
-              </Button>
+              <NewEvaluationDialog
+                trigger={<Button type="button">Seleccionar iniciativa</Button>}
+              />
             }
           />
         ) : (

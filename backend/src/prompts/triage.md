@@ -14,11 +14,25 @@ Tu tarea es hacer el **triage rápido** de una iniciativa recién recibida: deci
 
 {{INITIATIVE}}
 
+## Antes de clasificar: ¿es clasificable?
+
+Primero decide si la iniciativa tiene contenido suficiente para ser clasificada. Pon `clasificable: false` cuando ocurra cualquiera de estas cosas:
+
+- El texto no es lenguaje natural: caracteres al azar, tecleo sin sentido, letras repetidas (`asdasdasd`, `xxxxx`, `123123`).
+- El texto es legible pero no describe nada: una sola palabra suelta, una prueba (`test`, `prueba`, `hola`), o frases vacías sin problema ni solución identificable.
+- Hay palabras pero no se puede inferir NI qué problema resuelve NI a qué se dedica la iniciativa.
+
+**No fuerces una categoría.** Si para escoger tendrías que inventar de qué trata la iniciativa, es `clasificable: false`. Es mucho mejor devolver "no clasificable" que enrutar basura a un área que va a perder tiempo leyéndola.
+
+Ojo: una iniciativa breve o mal redactada pero con una idea real SÍ es clasificable. Lo que la descalifica es la ausencia de contenido, no la falta de detalle o de ortografía.
+
+Cuando `clasificable` sea `false`, pon `classificationId` y `workTableId` en `null`, `confidence` en 0, y explica en `motivoNoClasificable` qué falta concretamente.
+
 ## Reglas
 
 - Responde ÚNICAMENTE un JSON válido. Sin markdown, sin bloques de código, sin texto antes ni después.
 - `classificationId` y `workTableId` deben ser UUIDs copiados literalmente de los catálogos anteriores. No inventes identificadores ni uses nombres en su lugar.
-- Elige exactamente UNA clasificación y UNA mesa de trabajo.
+- Cuando `clasificable` sea `true`, elige exactamente UNA clasificación y UNA mesa de trabajo.
 - La mesa de trabajo debe ser coherente con la clasificación: lo disruptivo y lo adyacente va al Laboratorio Digital; la mejora de procesos va a Procesos; la mejora incremental y la solicitud operativa van a Producto / Operaciones & TI; lo que es puramente gobierno de datos o ciberseguridad va a Seguridad / Data & Analytics.
 - Las justificaciones van en español, máximo dos frases, y deben apoyarse en datos concretos de la iniciativa. No inventes hechos que no estén en el texto.
 - `confidence` es un número entre 0 y 1 que refleja qué tan clara es la decisión:
@@ -29,10 +43,26 @@ Tu tarea es hacer el **triage rápido** de una iniciativa recién recibida: deci
 
 ## Formato de respuesta
 
+Cuando la iniciativa es clasificable:
+
 {
+  "clasificable": true,
   "classificationId": "uuid del catálogo",
   "classificationReasoning": "por qué esta categoría y no otra",
   "workTableId": "uuid del catálogo",
   "workTableReasoning": "por qué esta mesa de trabajo",
-  "confidence": 0.85
+  "confidence": 0.85,
+  "motivoNoClasificable": null
+}
+
+Cuando no lo es:
+
+{
+  "clasificable": false,
+  "classificationId": null,
+  "classificationReasoning": null,
+  "workTableId": null,
+  "workTableReasoning": null,
+  "confidence": 0,
+  "motivoNoClasificable": "El campo de necesidad contiene caracteres al azar y no describe ningún problema."
 }

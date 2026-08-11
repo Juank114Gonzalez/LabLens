@@ -57,14 +57,6 @@ export const BENEFIT_OPTIONS = [
   'Otras',
 ] as const;
 
-export const URGENCY_LEVELS = [
-  '1 - Nada urgente (puede abordarse en más de 12 meses)',
-  '2 - Poco urgente (debería abordarse entre 6 y 12 meses)',
-  '3 - Urgencia media (debería abordarse entre 3 y 6 meses)',
-  '4 - Urgente (debería abordarse entre 1 y 3 meses)',
-  '5 - Muy urgente (requiere atención en menos de 1 mes)',
-] as const;
-
 export const publicInitiativeFormSchema = z
   .object({
     sourceType: z.enum(SOURCE_TYPES),
@@ -89,21 +81,51 @@ export const publicInitiativeFormSchema = z
     beneficios: z.array(z.enum(BENEFIT_OPTIONS)),
     impacto: z.string().trim().max(500).optional(),
 
-    // 11, 12
-    urgencia: z.enum(URGENCY_LEVELS, { message: 'Selecciona un nivel' }),
+    // 11
     tieneInteresado: z.boolean({ message: 'Selecciona una opción' }),
 
-    companyContacts: z.array(contactSchema),
+    /*
+     * Borrador laxo a propósito: las fichas de contacto solo se exigen completas
+     * cuando el usuario respondió que sí existe un interesado. Con `contactSchema`
+     * directo aquí, una ficha en blanco bloqueaba el envío incluso tras responder
+     * "No", y sin mostrar en pantalla cuál era el campo culpable.
+     */
+    companyContacts: z.array(
+      z.object({
+        empresa: z.string(),
+        contacto: z.string(),
+        cargo: z.string(),
+        correo: z.string(),
+        telefono: z.string(),
+      }),
+    ),
   })
   .superRefine((value, ctx) => {
-    // Solo se exige contacto cuando el usuario afirmó que existe un interesado.
-    if (value.tieneInteresado && value.companyContacts.length === 0) {
+    if (!value.tieneInteresado) return;
+
+    if (value.companyContacts.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['companyContacts'],
         message: 'Agrega al menos un contacto',
       });
+      return;
     }
+
+    // Se reutiliza `contactSchema` como única fuente de verdad y se reproyectan
+    // sus errores sobre el índice correcto, para que cada input marque el suyo.
+    value.companyContacts.forEach((contact, index) => {
+      const result = contactSchema.safeParse(contact);
+      if (result.success) return;
+
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['companyContacts', index, ...issue.path],
+          message: issue.message,
+        });
+      }
+    });
   });
 
 export type PublicInitiativeFormValues = z.infer<typeof publicInitiativeFormSchema>;
