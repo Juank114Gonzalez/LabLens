@@ -44,7 +44,9 @@ export function NewEvaluationDialog({ trigger }: { trigger: React.ReactNode }) {
     enabled: open,
   });
 
-  const eligible = (initiativesQuery.data ?? []).filter((item) => item.status !== 'ARCHIVED');
+  const eligible = (initiativesQuery.data ?? []).filter(
+    (item) => item.status !== 'ARCHIVED',
+  );
 
   const startMutation = useMutation({
     mutationFn: (mode: StartMode) => startEvaluation(selectedId, mode),
@@ -80,8 +82,8 @@ export function NewEvaluationDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogHeader>
           <DialogTitle>Nueva evaluación</DialogTitle>
           <DialogDescription>
-            Evalúa de una vez con los datos que ya tiene la iniciativa, o inicia una entrevista
-            para enriquecer el contexto y evaluar después.
+            Evalúa de una vez con los datos que ya tiene la iniciativa, o inicia una
+            entrevista para enriquecer el contexto y evaluar después.
           </DialogDescription>
         </DialogHeader>
 
@@ -92,9 +94,9 @@ export function NewEvaluationDialog({ trigger }: { trigger: React.ReactNode }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : eligible.length === 0 ? (
-          <div className="space-y-3 rounded-xl border border-border bg-secondary/30 px-4 py-6 text-center">
+          <div className="border-border bg-secondary/30 space-y-3 rounded-xl border px-4 py-6 text-center">
             <p className="text-sm font-medium">No hay iniciativas disponibles</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Registra una iniciativa para poder entrevistarla o evaluarla.
             </p>
             <Button asChild variant="secondary" size="sm">
@@ -112,14 +114,14 @@ export function NewEvaluationDialog({ trigger }: { trigger: React.ReactNode }) {
                   onClick={() => setSelectedId(item.id)}
                   aria-pressed={selectedId === item.id}
                   className={cn(
-                    'w-full rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'focus-visible:ring-ring w-full rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none',
                     selectedId === item.id
                       ? 'border-primary bg-primary/10'
                       : 'border-border/70 hover:bg-muted/40',
                   )}
                 >
                   <p className="text-sm font-medium">{item.nombre || 'Sin nombre'}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {item.status} · {item.areaProcesoImpactado || 'Sin área'}
                   </p>
                 </button>
