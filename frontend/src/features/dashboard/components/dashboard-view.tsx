@@ -17,13 +17,11 @@ import {
 } from '@/components/ui/table';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
-import { MagnitudeBars } from '@/features/dashboard/components/charts/magnitude-bars';
 import { ShareBar } from '@/features/dashboard/components/charts/share-bar';
 import { StatTile } from '@/features/dashboard/components/charts/stat-tile';
 import { TrendLines } from '@/features/dashboard/components/charts/trend-lines';
 import { colorForClassification } from '@/features/dashboard/lib/viz';
 import { getInitiativeStats } from '@/features/dashboard/services/stats.service';
-import { SOURCE_LABELS } from '@/features/initiative/lib/status';
 import { listInitiatives } from '@/features/initiative/services/initiative.service';
 import { EmptyState } from '@/shared/components/empty-state';
 import { formatShortDate } from '@/shared/lib/dates';
@@ -48,14 +46,14 @@ export function DashboardView() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 sm:p-8">
-      <section className="rounded-3xl border border-border/70 bg-card/50 p-6 sm:p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
+      <section className="border-border/70 bg-card/50 rounded-3xl border p-6 sm:p-8">
+        <p className="text-primary text-xs font-medium tracking-[0.2em] uppercase">
           {branding.organization}
         </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="font-heading mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
           Hola {user?.name?.split(' ')[0] ?? 'evaluador'}
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-2 max-w-xl text-sm">
           Estado del portafolio de iniciativas: qué llega, cómo se está clasificando y qué
           espera evaluación en el Laboratorio.
         </p>
@@ -71,7 +69,11 @@ export function DashboardView() {
         <Skeleton className="h-24 w-full" />
       ) : (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile label="Iniciativas recibidas" value={data.total} hint="Histórico completo" />
+          <StatTile
+            label="Iniciativas recibidas"
+            value={data.total}
+            hint="Histórico completo"
+          />
           <StatTile
             label={`Últimos ${data.windowDays} días`}
             value={data.currentWindow}
@@ -90,10 +92,15 @@ export function DashboardView() {
         </section>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      {/* Una sola columna desde que se ocultó la tarjeta de canal: con
+          `lg:grid-cols-2` la clasificación quedaba a media pantalla y el resto
+          vacío. Volver a dos columnas si el canal regresa. */}
+      <section className="grid gap-4">
         <Card className="border-border/70 bg-card/60 shadow-none">
           <CardHeader>
-            <CardTitle className="font-heading text-lg">Distribución por clasificación</CardTitle>
+            <CardTitle className="font-heading text-lg">
+              Distribución por clasificación
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {stats.isLoading || !data ? (
@@ -112,24 +119,9 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 bg-card/60 shadow-none">
-          <CardHeader>
-            <CardTitle className="font-heading text-lg">Canal de origen</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats.isLoading || !data ? (
-              <Skeleton className="h-32 w-full" />
-            ) : (
-              <MagnitudeBars
-                bars={data.bySource.map((item) => ({
-                  key: item.sourceType,
-                  label: SOURCE_LABELS[item.sourceType],
-                  value: item.count,
-                }))}
-              />
-            )}
-          </CardContent>
-        </Card>
+        {/* Tarjeta «Canal de origen» oculta: el formulario público dejó de
+            preguntar el canal, así que todo entra como INTERNAL y la gráfica
+            sería una sola barra. `data.bySource` sigue llegando de la API. */}
       </section>
 
       <Card className="border-border/70 bg-card/60 shadow-none">
@@ -149,7 +141,9 @@ export function DashboardView() {
 
       <Card className="border-border/70 bg-card/60 shadow-none">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="font-heading text-lg">Últimas en la bandeja del Lab</CardTitle>
+          <CardTitle className="font-heading text-lg">
+            Últimas en la bandeja del Lab
+          </CardTitle>
           <Button asChild variant="outline" size="sm">
             <Link href={routes.inbox}>Ver bandeja</Link>
           </Button>
@@ -168,7 +162,6 @@ export function DashboardView() {
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Clasificación</TableHead>
-                  <TableHead>Canal</TableHead>
                   <TableHead>Triage</TableHead>
                   <TableHead />
                 </TableRow>
@@ -176,13 +169,14 @@ export function DashboardView() {
               <TableBody>
                 {inboxItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.nombre || 'Sin nombre'}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.nombre || 'Sin nombre'}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary">
                         {item.triageClassification?.nombre ?? 'Sin clasificar'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{SOURCE_LABELS[item.sourceType]}</TableCell>
                     <TableCell>
                       {item.triagedAt ? formatShortDate(item.triagedAt) : '—'}
                     </TableCell>

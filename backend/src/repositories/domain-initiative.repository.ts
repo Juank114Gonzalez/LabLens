@@ -53,6 +53,7 @@ export type InitiativeFilters = {
   status?: InitiativeStatus[];
   sourceType?: SourceType[];
   triageClassificationId?: string;
+  triageWorkTableId?: string;
   from?: Date;
   to?: Date;
   search?: string;
@@ -69,6 +70,9 @@ function buildFilterWhere(filters: InitiativeFilters = {}): Prisma.InitiativeWhe
   }
   if (filters.triageClassificationId) {
     where.triageClassificationId = filters.triageClassificationId;
+  }
+  if (filters.triageWorkTableId) {
+    where.triageWorkTableId = filters.triageWorkTableId;
   }
   if (filters.from || filters.to) {
     where.createdAt = {

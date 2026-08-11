@@ -20,6 +20,7 @@ import { routes } from '@/config/routes';
 import { conversationsQueryKey } from '@/features/conversation/hooks/use-conversations';
 import { startEvaluation } from '@/features/conversation/services/conversation.service';
 import { listInitiatives } from '@/features/initiative/services/initiative.service';
+import { INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
 import { cn } from '@/lib/utils';
 
 type StartMode = 'interview' | 'direct';
@@ -122,7 +123,8 @@ export function NewEvaluationDialog({ trigger }: { trigger: React.ReactNode }) {
                 >
                   <p className="text-sm font-medium">{item.nombre || 'Sin nombre'}</p>
                   <p className="text-muted-foreground text-xs">
-                    {item.status} · {item.areaProcesoImpactado || 'Sin área'}
+                    {INITIATIVE_STATUS_LABELS[item.status] ?? item.status} ·{' '}
+                    {item.areaProcesoImpactado || 'Sin área'}
                   </p>
                 </button>
               </li>

@@ -24,7 +24,7 @@ import {
   listInitiatives,
   type InitiativeFilters,
 } from '@/features/initiative/services/initiative.service';
-import { INITIATIVE_STATUS_LABELS, SOURCE_LABELS } from '@/features/initiative/lib/status';
+import { INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
 import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ScrollablePage } from '@/shared/components/scrollable-page';
@@ -100,7 +100,6 @@ export default function InitiativesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Canal</TableHead>
                 <TableHead>Clasificación</TableHead>
                 <TableHead>Mesa asignada</TableHead>
                 <TableHead>Estado</TableHead>
@@ -112,7 +111,6 @@ export default function InitiativesPage() {
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.nombre || 'Sin nombre'}</TableCell>
-                  <TableCell>{SOURCE_LABELS[item.sourceType]}</TableCell>
                   <TableCell>{item.triageClassification?.nombre ?? '—'}</TableCell>
                   <TableCell>{item.triageWorkTable?.nombre ?? '—'}</TableCell>
                   <TableCell>

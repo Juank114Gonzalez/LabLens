@@ -14,6 +14,7 @@ export const initiativeFiltersSchema = z.object({
   status: csvEnum(InitiativeStatus),
   sourceType: csvEnum(SourceType),
   triageClassificationId: z.string().uuid().optional(),
+  triageWorkTableId: z.string().uuid().optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   search: z.string().trim().min(1).max(255).optional(),

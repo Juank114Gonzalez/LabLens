@@ -14,6 +14,7 @@ import {
   listEvaluations,
 } from '@/features/evaluation/services/evaluation.service';
 import { NewEvaluationDialog } from '@/features/evaluation/components/new-evaluation-dialog';
+import { evaluationStatusLabel, readinessLabel } from '@/features/evaluation/lib/status';
 import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { useAuthStore } from '@/stores/auth.store';
@@ -44,17 +45,20 @@ export default function EvaluationsPage() {
   // Las opciones se derivan de los datos en vez de fijarse a mano: así nunca se
   // ofrece un filtro que no devuelve nada, ni se queda corto si el backend
   // agrega un estado nuevo.
+  // Se filtra por el valor crudo del enum pero se muestra su etiqueta, y se
+  // ordena por la etiqueta: alfabético en inglés no le sirve a nadie aquí.
   const statusOptions = useMemo(
-    () => [...new Set(items.map((item) => item.status))].sort(),
+    () =>
+      [...new Set(items.map((item) => item.status))]
+        .map((value) => ({ value, label: evaluationStatusLabel(value) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es')),
     [items],
   );
   const evaluatorOptions = useMemo(
     () =>
-      [
-        ...new Set(
-          items.flatMap((item) => (item.evaluator ? [item.evaluator.name] : [])),
-        ),
-      ].sort((a, b) => a.localeCompare(b, 'es')),
+      [...new Set(items.flatMap((item) => (item.evaluator ? [item.evaluator.name] : [])))]
+        .sort((a, b) => a.localeCompare(b, 'es'))
+        .map((value) => ({ value, label: value })),
     [items],
   );
 
@@ -66,8 +70,14 @@ export default function EvaluationsPage() {
       if (evaluator && item.evaluator?.name !== evaluator) return false;
       if (!needle) return true;
 
-      // La búsqueda libre cubre los dos campos que alguien recuerda de memoria.
-      const haystack = [item.initiative.nombre, item.evaluator?.name ?? ''];
+      // La búsqueda libre cubre lo que alguien recuerda de memoria — incluida la
+      // etiqueta en español, porque es lo que ve en pantalla: escribir
+      // "completada" debe encontrar las que están en COMPLETED.
+      const haystack = [
+        item.initiative.nombre,
+        item.evaluator?.name ?? '',
+        evaluationStatusLabel(item.status),
+      ];
       return haystack.some((field) => normalize(field).includes(needle));
     });
   }, [items, search, status, evaluator]);
@@ -214,8 +224,10 @@ export default function EvaluationsPage() {
                               {item.initiative.nombre || 'Iniciativa'}
                             </p>
                             <p className="text-muted-foreground text-xs">
-                              {item.status}
-                              {item.readinessStatus ? ` · ${item.readinessStatus}` : ''}
+                              {evaluationStatusLabel(item.status)}
+                              {item.readinessStatus
+                                ? ` · ${readinessLabel(item.readinessStatus)}`
+                                : ''}
                               {item.evaluator ? ` · ${item.evaluator.name}` : ''}
                             </p>
                           </div>
@@ -265,7 +277,8 @@ function FilterSelect({
 }: {
   value: string;
   onChange: (value: string) => void;
-  options: readonly string[];
+  /** El `value` es el valor crudo del enum; el `label` es lo que ve el usuario. */
+  options: ReadonlyArray<{ value: string; label: string }>;
   placeholder: string;
   ariaLabel: string;
 }) {
@@ -279,8 +292,8 @@ function FilterSelect({
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>

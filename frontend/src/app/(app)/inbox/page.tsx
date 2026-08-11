@@ -21,7 +21,6 @@ import { routes } from '@/config/routes';
 import { conversationsQueryKey } from '@/features/conversation/hooks/use-conversations';
 import { startEvaluation } from '@/features/conversation/services/conversation.service';
 import { InitiativeFiltersBar } from '@/features/initiative/components/initiative-filters';
-import { SOURCE_LABELS } from '@/features/initiative/lib/status';
 import {
   listInitiatives,
   type InitiativeFilters,
@@ -63,18 +62,22 @@ export default function LabInboxPage() {
       toast.success('Entrevista iniciada');
       router.push(routes.chat(result.conversationId));
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'No se pudo iniciar la evaluación')),
+    onError: (error) =>
+      toast.error(getErrorMessage(error, 'No se pudo iniciar la evaluación')),
   });
 
   const items = query.data ?? [];
 
   return (
-    <ScrollablePage className="p-6 sm:p-8" contentClassName="max-w-6xl flex flex-col gap-6">
+    <ScrollablePage
+      className="p-6 sm:p-8"
+      contentClassName="max-w-6xl flex flex-col gap-6"
+    >
       <div>
         <h1 className="font-heading text-3xl font-semibold">Bandeja del Lab</h1>
-        <p className="text-sm text-muted-foreground">
-          Iniciativas disruptivas o adyacentes que el triage dejó en el Laboratorio y esperan una
-          evaluación completa.
+        <p className="text-muted-foreground text-sm">
+          Iniciativas disruptivas o adyacentes que el triage dejó en el Laboratorio y
+          esperan una evaluación completa.
         </p>
       </div>
 
@@ -93,7 +96,6 @@ export default function LabInboxPage() {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Clasificación</TableHead>
-              <TableHead>Canal</TableHead>
               <TableHead>Confianza</TableHead>
               <TableHead>Triage</TableHead>
               <TableHead>Acciones</TableHead>
@@ -102,19 +104,22 @@ export default function LabInboxPage() {
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.nombre || 'Sin nombre'}</TableCell>
+                <TableCell className="font-medium">
+                  {item.nombre || 'Sin nombre'}
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary">
                     {item.triageClassification?.nombre ?? 'Sin clasificar'}
                   </Badge>
                 </TableCell>
-                <TableCell>{SOURCE_LABELS[item.sourceType]}</TableCell>
                 <TableCell className="tabular-nums">
                   {item.triageConfidence !== null
                     ? `${Math.round(item.triageConfidence * 100)}%`
                     : '—'}
                 </TableCell>
-                <TableCell>{item.triagedAt ? formatShortDate(item.triagedAt) : '—'}</TableCell>
+                <TableCell>
+                  {item.triagedAt ? formatShortDate(item.triagedAt) : '—'}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     <Button asChild size="sm" variant="ghost">

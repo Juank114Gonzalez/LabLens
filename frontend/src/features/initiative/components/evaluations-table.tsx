@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { routes } from '@/config/routes';
 import type { EvaluationSummary } from '@/features/initiative/types';
+import { evaluationStatusLabel } from '@/features/evaluation/lib/status';
 import { formatShortDate } from '@/shared/lib/dates';
 import { EmptyState } from '@/shared/components/empty-state';
 
@@ -90,7 +91,7 @@ export function EvaluationsTable({
                   : '—')}
             </TableCell>
             <TableCell>
-              <Badge variant="secondary">{item.status}</Badge>
+              <Badge variant="secondary">{evaluationStatusLabel(item.status)}</Badge>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-1">

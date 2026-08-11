@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { routes } from '@/config/routes';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { canAccessAdmin, canAccessEvaluations } from '@/features/auth/lib/roles';
+import { canAccessAdmin, canAccessEvaluations, roleLabel } from '@/features/auth/lib/roles';
 import { Logo } from '@/shared/components/logo';
 import { useUiStore } from '@/stores/ui.store';
 import { cn } from '@/lib/utils';
@@ -139,7 +139,7 @@ export function ConversationSidebar() {
               <span className="min-w-0 flex-1 text-left">
                 <span className="block truncate text-sm font-medium">{user?.name}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {user?.role}
+                  {roleLabel(user?.role)}
                 </span>
               </span>
             </Button>

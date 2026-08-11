@@ -59,6 +59,12 @@
 }
 
 :root {
+  /* Le dice al navegador con qué esquema dibujar los controles nativos que no
+     podemos estilizar: el desplegable del `select`, la barra de scroll y el
+     calendario de `input type="date"`. Sin esto el desplegable sale con fondo
+     blanco del navegador y hereda el texto claro del tema — blanco sobre blanco. */
+  color-scheme: light;
+
   /* Lente de Innovación light — ink + ACH blue */
   --background: oklch(0.985 0.005 262);
   --foreground: oklch(0.18 0.025 262);
@@ -109,6 +115,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   /* Lente de Innovación dark — ACH night navy + cobalt.
      --primary is tuned to one value that works as BOTH a solid fill under white
      text and as blue text on --background, so `bg-primary` and `text-primary`
@@ -186,6 +194,19 @@
 
   ::selection {
     background: oklch(0.6 0.2 262 / 0.4);
+  }
+
+  /*
+   * Segunda capa por si `color-scheme` no alcanza: en Windows y Linux el
+   * navegador sí respeta color y fondo en los `option`, y así el desplegable
+   * queda con los mismos tonos del tema en vez de con el gris del sistema.
+   *
+   * macOS dibuja el desplegable a nivel de sistema y lo ignora — ahí manda
+   * `color-scheme`, que es justamente por lo que están las dos capas.
+   */
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
   }
 }
 

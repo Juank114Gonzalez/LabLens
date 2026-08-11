@@ -3,10 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { listClassifications } from '@/features/admin/services/admin.service';
-import { INITIATIVE_STATUS_LABELS, SOURCE_LABELS } from '@/features/initiative/lib/status';
+import { listClassifications, listWorkTables } from '@/features/admin/services/admin.service';
+import { INITIATIVE_STATUS_LABELS } from '@/features/initiative/lib/status';
 import type { InitiativeFilters } from '@/features/initiative/services/initiative.service';
-import type { InitiativeStatus, SourceType } from '@/features/initiative/types';
+import type { InitiativeStatus } from '@/features/initiative/types';
 
 type Props = {
   value: InitiativeFilters;
@@ -24,12 +24,22 @@ export function InitiativeFiltersBar({ value, onChange, showStatus = true }: Pro
     queryFn: listClassifications,
   });
 
+  // Mismas claves que usa el admin de mesas, así que si alguien renombra una
+  // desde ahí, este desplegable se actualiza sin recargar.
+  const workTables = useQuery({
+    queryKey: ['work-tables'],
+    queryFn: listWorkTables,
+  });
+
   function patch(next: Partial<InitiativeFilters>) {
     onChange({ ...value, ...next });
   }
 
+  // Seis columnas: la búsqueda ocupa dos, más estado, clasificación, mesa y
+  // fecha. En la bandeja el estado va fijo y se oculta, así que ahí queda un
+  // hueco al final en vez de una fila rota.
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
       <div className="space-y-1.5 lg:col-span-2">
         <Label htmlFor="filter-search">Buscar</Label>
         <Input
@@ -56,37 +66,21 @@ export function InitiativeFiltersBar({ value, onChange, showStatus = true }: Pro
             }
           >
             <option value="">Todos</option>
-            {(Object.keys(INITIATIVE_STATUS_LABELS) as InitiativeStatus[]).map((status) => (
-              <option key={status} value={status}>
-                {INITIATIVE_STATUS_LABELS[status]}
-              </option>
-            ))}
+            {(Object.keys(INITIATIVE_STATUS_LABELS) as InitiativeStatus[]).map(
+              (status) => (
+                <option key={status} value={status}>
+                  {INITIATIVE_STATUS_LABELS[status]}
+                </option>
+              ),
+            )}
           </select>
         </div>
       ) : null}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="filter-source">Canal</Label>
-        <select
-          id="filter-source"
-          className={selectClassName}
-          value={value.sourceType?.[0] ?? ''}
-          onChange={(event) =>
-            patch({
-              sourceType: event.target.value
-                ? [event.target.value as SourceType]
-                : undefined,
-            })
-          }
-        >
-          <option value="">Todos</option>
-          {(Object.keys(SOURCE_LABELS) as SourceType[]).map((source) => (
-            <option key={source} value={source}>
-              {SOURCE_LABELS[source]}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Filtro de canal oculto: el formulario público dejó de preguntarlo, así
+          que hoy todo entra como INTERNAL y el filtro no separa nada. El campo
+          sigue en la base y `InitiativeFilters.sourceType` sigue soportado por
+          el servicio — solo se quitó el control. */}
 
       <div className="space-y-1.5">
         <Label htmlFor="filter-classification">Clasificación</Label>
@@ -100,6 +94,23 @@ export function InitiativeFiltersBar({ value, onChange, showStatus = true }: Pro
         >
           <option value="">Todas</option>
           {(classifications.data ?? []).map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="filter-work-table">Mesa asignada</Label>
+        <select
+          id="filter-work-table"
+          className={selectClassName}
+          value={value.triageWorkTableId ?? ''}
+          onChange={(event) => patch({ triageWorkTableId: event.target.value || undefined })}
+        >
+          <option value="">Todas</option>
+          {(workTables.data ?? []).map((item) => (
             <option key={item.id} value={item.id}>
               {item.nombre}
             </option>

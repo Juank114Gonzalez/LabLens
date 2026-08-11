@@ -13,6 +13,7 @@ export type InitiativeFilters = {
   status?: InitiativeStatus[];
   sourceType?: SourceType[];
   triageClassificationId?: string;
+  triageWorkTableId?: string;
   from?: string;
   to?: string;
   search?: string;
@@ -24,6 +25,9 @@ function toQueryString(filters: InitiativeFilters = {}): string {
   if (filters.sourceType?.length) params.set('sourceType', filters.sourceType.join(','));
   if (filters.triageClassificationId) {
     params.set('triageClassificationId', filters.triageClassificationId);
+  }
+  if (filters.triageWorkTableId) {
+    params.set('triageWorkTableId', filters.triageWorkTableId);
   }
   if (filters.from) params.set('from', filters.from);
   if (filters.to) params.set('to', filters.to);
