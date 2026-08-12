@@ -61,12 +61,22 @@ export type DomainInitiative = {
   porQueAhora: string;
   paraQue: string;
   comoSeResuelveHoy: string;
+  // Formulario público. El interno los deja en su default vacío, así que la
+  // vista de detalle los oculta cuando no vienen en lugar de pintar guiones.
+  areaSolicitante: string;
+  solucionPropuesta: string;
+  impactaA: string[];
+  productoRelacionado: string[];
+  beneficios: string[];
+  tieneInteresado: boolean | null;
   referenceOrganization: string | null;
   referenceEvent: string | null;
   referenceLink: string | null;
   referenceRationale: string | null;
   submitterName: string | null;
   submitterEmail: string | null;
+  /** No nulo si esta iniciativa es copia de otra. */
+  copiedFromId: string | null;
   triageReasoning: string | null;
   triageConfidence: number | null;
   triagedAt: string | null;

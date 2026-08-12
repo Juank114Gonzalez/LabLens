@@ -42,16 +42,50 @@ function SectionCard({
   );
 }
 
+/*
+ * Tonos del Fit sobre los tokens del tema, no sobre la paleta cruda de Tailwind.
+ * Con `emerald`/`amber`/`rose` fijos, el panel no seguía el rebranding ni se
+ * adapta si el tema cambia; `--success` y `--warning` existían justo para esto.
+ */
 function fitTone(fit: number) {
-  if (fit >= 80) return 'text-emerald-600 dark:text-emerald-400';
-  if (fit >= 60) return 'text-amber-600 dark:text-amber-400';
-  return 'text-rose-600 dark:text-rose-400';
+  if (fit >= 80) return 'text-success';
+  if (fit >= 60) return 'text-signal';
+  return 'text-destructive';
 }
 
 function barTone(fit: number) {
-  if (fit >= 80) return 'bg-emerald-500';
-  if (fit >= 60) return 'bg-amber-500';
-  return 'bg-rose-500';
+  if (fit >= 80) return 'bg-success';
+  if (fit >= 60) return 'bg-signal';
+  return 'bg-destructive';
+}
+
+/**
+ * Una fila del contraste. `null` no es un desacierto: significa que el triage
+ * mandó la iniciativa a revisión manual en vez de arriesgar una clasificación,
+ * y contarlo como error castigaría justo la conducta prudente.
+ */
+function ComparisonRow({
+  label,
+  coincide,
+  triageValue,
+}: {
+  label: string;
+  coincide: boolean | null;
+  triageValue: string | null;
+}) {
+  const estado =
+    coincide === null
+      ? { texto: 'El triage no clasificó · quedó en revisión manual', tono: 'text-muted-foreground' }
+      : coincide
+        ? { texto: `Coincide · ${triageValue}`, tono: 'text-success' }
+        : { texto: `Difiere · el triage dijo "${triageValue}"`, tono: 'text-signal' };
+
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className={cn('text-sm font-medium', estado.tono)}>{estado.texto}</span>
+    </div>
+  );
 }
 
 export function EvaluationResultPanel({
@@ -60,6 +94,7 @@ export function EvaluationResultPanel({
 }: EvaluationResultPanelProps) {
   const fit = evaluation.fit ?? 0;
   const bc = evaluation.businessCase;
+  const tc = evaluation.triageComparison;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -86,17 +121,22 @@ export function EvaluationResultPanel({
         </div>
       </SectionCard>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {evaluation.criteriaScores.map((item, index) => (
-          <SectionCard key={item.criteriaId} title={item.nombre} delay={0.04 + index * 0.03}>
-            <p className="font-heading text-2xl font-semibold">{item.score}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Peso {item.peso}%</p>
-            <div className="mt-3">
-              <EvaluationProse content={item.justification} />
-            </div>
+      {/*
+        El orden va de lo general a lo específico: primero el veredicto, luego el
+        argumento en prosa, después a dónde se enruta, qué se evaluó, y solo al
+        final el desglose criterio por criterio y la trazabilidad. Quien abre esta
+        pantalla casi siempre quiere el número y el porqué, no las seis fichas.
+      */}
+      {bc ? (
+        <>
+          <SectionCard title="Resumen ejecutivo" delay={0.05}>
+            <EvaluationProse content={bc.resumenEjecutivo} />
           </SectionCard>
-        ))}
-      </div>
+          <SectionCard title="Recomendación final" delay={0.08}>
+            <EvaluationProse content={bc.recomendacionFinal} />
+          </SectionCard>
+        </>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <SectionCard title="Clasificación" delay={0.2}>
@@ -131,11 +171,48 @@ export function EvaluationResultPanel({
         </SectionCard>
       </div>
 
+      {/* La iniciativa de la que nació esta evaluación, con enlace a su ficha
+          completa. Sin esto había que recordar de dónde venía el dictamen. */}
+      {evaluation.initiative ? (
+        <SectionCard title="Iniciativa evaluada" delay={0.24}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="font-heading text-lg font-medium">
+              {evaluation.initiative.nombre || 'Sin nombre'}
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link href={routes.initiative(evaluation.initiative.id)}>
+                <FileText className="size-3.5" />
+                Ver iniciativa
+              </Link>
+            </Button>
+          </div>
+          {evaluation.initiative.necesidad ? (
+            <div className="mt-3 border-t border-border/60 pt-3">
+              <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                Problema planteado
+              </p>
+              <EvaluationProse content={evaluation.initiative.necesidad} />
+            </div>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {evaluation.criteriaScores.map((item, index) => (
+          <SectionCard key={item.criteriaId} title={item.nombre} delay={0.26 + index * 0.02}>
+            <p className="font-heading text-2xl font-semibold">{item.score}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Peso {item.peso}%</p>
+            <div className="mt-3">
+              <EvaluationProse content={item.justification} />
+            </div>
+          </SectionCard>
+        ))}
+      </div>
+
+      {/* El detalle del business case. El resumen y la recomendación ya salieron
+          arriba, junto al score: son la lectura de un minuto. */}
       {bc ? (
         <>
-          <SectionCard title="Business Case · Resumen ejecutivo" delay={0.26}>
-            <EvaluationProse content={bc.resumenEjecutivo} />
-          </SectionCard>
           <SectionCard title="Objetivos de negocio" delay={0.28}>
             <ul className="list-disc space-y-1.5 pl-5">
               {bc.objetivosNegocio.map((item) => (
@@ -164,13 +241,73 @@ export function EvaluationResultPanel({
               ))}
             </ul>
           </SectionCard>
-          <SectionCard title="Recomendación final" delay={0.36}>
-            <EvaluationProse content={bc.recomendacionFinal} />
-          </SectionCard>
         </>
       ) : null}
 
-      <SectionCard title="Evidencias utilizadas" delay={0.38}>
+      {/* Con qué reglas se produjo este número. Sin esto, un Fit de 75 no se
+          puede comparar con otro de hace dos meses: puede que los pesos ni
+          siquiera fueran los mismos. */}
+      <SectionCard title="Configuración usada" delay={0.36}>
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          {evaluation.criteriaVersion ? (
+            <>
+              <span className="font-heading text-lg font-medium">
+                Versión {evaluation.criteriaVersion.numero}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                vigente desde{' '}
+                {new Date(evaluation.criteriaVersion.createdAt).toLocaleDateString('es-CO')}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Sin versión registrada (anterior al historial)
+            </span>
+          )}
+        </div>
+
+        <ul className="mt-3 space-y-1.5 border-t border-border/60 pt-3">
+          {evaluation.criteriaScores.map((item) => (
+            <li key={item.criteriaId} className="flex items-baseline justify-between gap-3">
+              <span>{item.nombre}</span>
+              <span className="tabular-nums text-muted-foreground">{item.peso}%</span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Estos pesos quedaron congelados al abrir la evaluación. Cambiarlos hoy no altera
+          este resultado.
+        </p>
+      </SectionCard>
+
+      {tc?.huboTriage ? (
+        <SectionCard title="Contraste con el triage inicial" delay={0.38}>
+          <p className="text-xs text-muted-foreground">
+            El triage clasificó esta iniciativa al recibirla, sin ver esta evaluación. La
+            evaluación tampoco vio el triage: son dos dictámenes independientes.
+          </p>
+          <div className="mt-3 space-y-2">
+            <ComparisonRow
+              label="Clasificación"
+              coincide={tc.clasificacionCoincide}
+              triageValue={tc.triageClassificationNombre}
+            />
+            <ComparisonRow
+              label="Mesa"
+              coincide={tc.mesaCoincide}
+              triageValue={tc.triageWorkTableNombre}
+            />
+          </div>
+          {tc.triageConfidence !== null ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Confianza declarada por el triage: {tc.triageConfidence.toFixed(2)}
+            </p>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
+      <SectionCard title="Evidencias utilizadas" delay={0.4}>
         <div className="space-y-3">
           <div>
             <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
@@ -204,14 +341,6 @@ export function EvaluationResultPanel({
               ))}
             </ul>
           </div>
-          {evaluation.initiative?.necesidad ? (
-            <div>
-              <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
-                Información inicial
-              </p>
-              <EvaluationProse content={evaluation.initiative.necesidad} />
-            </div>
-          ) : null}
         </div>
       </SectionCard>
 

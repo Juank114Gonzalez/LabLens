@@ -37,10 +37,27 @@ import {
   createCriteria,
   deleteCriteria,
   listCriteria,
+  listCriteriaVersions,
   reorderCriteria,
   updateCriteria,
   type CriteriaItem,
 } from '@/features/admin/services/admin.service';
+
+/**
+ * Espejo de `criteria-weights.ts` en el backend. Los pesos son decimales desde
+ * que el enunciado pidió 12.5%, así que comparar la suma con `=== 100` rechazaría
+ * repartos válidos por el error de coma flotante, y mostrarla cruda pintaría
+ * cosas como "99.99999999999999%".
+ */
+const WEIGHT_SUM_TOLERANCE = 1e-6;
+
+function weightsSumTo100(sum: number): boolean {
+  return Math.abs(sum - 100) < WEIGHT_SUM_TOLERANCE;
+}
+
+function formatWeight(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
 
 export default function AdminCriteriaPage() {
   const queryClient = useQueryClient();
@@ -57,6 +74,7 @@ export default function AdminCriteriaPage() {
     () => items.filter((i) => i.activo).reduce((total, item) => total + item.peso, 0),
     [items],
   );
+  const sumIsValid = weightsSumTo100(sum);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -94,7 +112,10 @@ export default function AdminCriteriaPage() {
         <div>
           <h1 className="font-heading text-3xl font-semibold">Criterios de evaluación</h1>
           <p className="text-sm text-muted-foreground">
-            Suma de pesos activos: <strong className={sum === 100 ? 'text-primary' : 'text-destructive'}>{sum}%</strong>
+            Suma de pesos activos:{' '}
+            <strong className={sumIsValid ? 'text-primary' : 'text-destructive'}>
+              {formatWeight(sum)}%
+            </strong>
           </p>
         </div>
         <div className="flex gap-2">
@@ -104,7 +125,7 @@ export default function AdminCriteriaPage() {
           </Button>
           <Button
             type="button"
-            disabled={sum !== 100 || saveOrderMutation.isPending}
+            disabled={!sumIsValid || saveOrderMutation.isPending}
             onClick={() => saveOrderMutation.mutate()}
           >
             Guardar orden y pesos
@@ -143,6 +164,8 @@ export default function AdminCriteriaPage() {
         </DndContext>
       )}
 
+      <CriteriaVersionHistory />
+
       <CriteriaDialog
         open={creating}
         onOpenChange={setCreating}
@@ -178,6 +201,74 @@ export default function AdminCriteriaPage() {
       />
       </div>
     </div>
+  );
+}
+
+/**
+ * Historial de configuraciones.
+ *
+ * Una versión nace cuando cambia el contenido efectivo de los criterios —pesos,
+ * nombres o `promptContext`—, no cada vez que se guarda. Por eso guardar sin
+ * cambiar nada no ensucia el historial, y por eso dos evaluaciones con la misma
+ * versión son directamente comparables.
+ */
+function CriteriaVersionHistory() {
+  const query = useQuery({
+    queryKey: ['admin-criteria-versions'],
+    queryFn: listCriteriaVersions,
+  });
+
+  const versions = query.data ?? [];
+  if (query.isLoading) return <Skeleton className="h-32 w-full" />;
+  if (versions.length === 0) return null;
+
+  return (
+    <Card className="border-border/70 shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base">Historial de versiones</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Cada evaluación queda ligada a la versión vigente cuando se abrió. Cambiar los
+          criterios hoy no reescribe los dictámenes anteriores.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {versions.map((version, index) => (
+          <details
+            key={version.id}
+            className="rounded-xl border border-border/60 px-3 py-2 text-sm"
+          >
+            <summary className="flex cursor-pointer flex-wrap items-center gap-2">
+              <span className="font-medium">Versión {version.numero}</span>
+              {/* La primera de la lista es la más reciente: viene ordenada desc. */}
+              {index === 0 ? (
+                <span className="rounded-md bg-primary/20 px-1.5 py-0.5 text-[11px] font-semibold text-lab">
+                  Vigente
+                </span>
+              ) : null}
+              <span className="text-muted-foreground text-xs">
+                {new Date(version.createdAt).toLocaleDateString('es-CO')} ·{' '}
+                {version.snapshot.length} criterios ·{' '}
+                {version.evaluaciones === 1
+                  ? '1 evaluación'
+                  : `${version.evaluaciones} evaluaciones`}
+              </span>
+            </summary>
+            <ul className="mt-2 space-y-1 border-t border-border/60 pt-2">
+              {[...version.snapshot]
+                .sort((a, b) => a.orden - b.orden)
+                .map((c) => (
+                  <li key={c.id} className="flex items-baseline justify-between gap-3">
+                    <span>{c.nombre}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {formatWeight(c.peso)}%
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </details>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -218,11 +309,14 @@ function SortableCriteriaCard({
         </div>
       </CardHeader>
       <CardContent>
-        <Label className="text-xs">Peso: {item.peso}%</Label>
+        <Label className="text-xs">Peso: {formatWeight(item.peso)}%</Label>
+        {/* Paso de 0.5: el enunciado declara pesos de 12.5% y con el paso entero
+            por defecto ese valor era inalcanzable desde la interfaz. */}
         <input
           type="range"
           min={0}
           max={100}
+          step={0.5}
           value={item.peso}
           className="mt-2 w-full"
           onChange={(e) => onChange({ peso: Number(e.target.value) })}

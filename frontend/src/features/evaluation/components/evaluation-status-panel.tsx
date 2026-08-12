@@ -21,10 +21,15 @@ function formatDuration(ms: number) {
   return `${min}m ${sec.toString().padStart(2, '0')}s`;
 }
 
+/*
+ * Tokens del tema en vez de la paleta cruda. Los `text-*-700` además eran
+ * ilegibles: la app se renderiza siempre en oscuro, así que ese texto quedaba
+ * casi negro sobre un fondo tintado al 10%.
+ */
 function readinessTone(status: string) {
-  if (status === 'READY') return 'text-emerald-700 bg-emerald-500/10 border-emerald-500/30';
-  if (status === 'IN_PROGRESS') return 'text-amber-700 bg-amber-500/10 border-amber-500/30';
-  return 'text-slate-600 bg-slate-500/10 border-slate-500/30';
+  if (status === 'READY') return 'text-success bg-success/10 border-success/30';
+  if (status === 'IN_PROGRESS') return 'text-signal bg-signal/10 border-signal/30';
+  return 'text-muted-foreground bg-muted/40 border-border';
 }
 
 export function EvaluationStatusPanel({

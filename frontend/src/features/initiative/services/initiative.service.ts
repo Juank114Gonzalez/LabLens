@@ -70,6 +70,43 @@ export async function deleteInitiative(id: string): Promise<void> {
   await apiClient.delete(`/api/initiatives/${id}`);
 }
 
+/** Duplica la iniciativa como borrador editable. No arrastra el triage. */
+export async function copyInitiative(id: string): Promise<DomainInitiative> {
+  return apiClient.post<DomainInitiative>(`/api/initiatives/${id}/copy`, {});
+}
+
+export type TriageResult = {
+  initiativeId: string;
+  status: InitiativeStatus;
+  isLabScope: boolean;
+  confidence: number;
+  needsReview: boolean;
+  reviewReason: string | null;
+  classification: { id: string; nombre: string; descripcion: string } | null;
+  classificationReasoning: string | null;
+  workTable: { id: string; nombre: string; descripcion: string } | null;
+  workTableReasoning: string | null;
+  notificationSent: boolean;
+};
+
+/** Vuelve a correr el triage sobre una sola iniciativa ya registrada. */
+export async function retriageInitiative(id: string): Promise<TriageResult> {
+  return apiClient.post<TriageResult>(`/api/initiatives/${id}/triage`, {});
+}
+
+export type TriageSweepResult = {
+  alcance: 'pendientes' | 'todas';
+  total: number;
+  triadas: number;
+  fallidas: number;
+};
+
+export async function runTriageSweep(
+  alcance: 'pendientes' | 'todas',
+): Promise<TriageSweepResult> {
+  return apiClient.post<TriageSweepResult>('/api/initiatives/triage-sweep', { alcance });
+}
+
 export async function listInitiativeEvaluations(
   id: string,
 ): Promise<EvaluationSummary[]> {

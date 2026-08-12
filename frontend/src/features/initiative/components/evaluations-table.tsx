@@ -14,7 +14,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { routes } from '@/config/routes';
 import type { EvaluationSummary } from '@/features/initiative/types';
-import { evaluationStatusLabel } from '@/features/evaluation/lib/status';
+import {
+  evaluationStatusLabel,
+  evaluationStatusTone,
+  triageDisagreement,
+} from '@/features/evaluation/lib/status';
+import { cn } from '@/lib/utils';
 import { formatShortDate } from '@/shared/lib/dates';
 import { EmptyState } from '@/shared/components/empty-state';
 
@@ -91,7 +96,32 @@ export function EvaluationsTable({
                   : '—')}
             </TableCell>
             <TableCell>
-              <Badge variant="secondary">{evaluationStatusLabel(item.status)}</Badge>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className={cn('border-0', evaluationStatusTone(item.status))}
+                >
+                  {evaluationStatusLabel(item.status)}
+                </Badge>
+                {/* El desacuerdo entre triage y pipeline no es un error: es la
+                    señal de que el caso es ambiguo y merece una segunda mirada. */}
+                {(() => {
+                  const d = triageDisagreement(item.results);
+                  if (!d) return null;
+                  const que = [d.clasificacion && 'clasificación', d.mesa && 'mesa']
+                    .filter(Boolean)
+                    .join(' y ');
+                  return (
+                    <Badge
+                      variant="secondary"
+                      className="border-0 bg-signal/20 text-signal"
+                      title={`El triage y la evaluación difieren en ${que}`}
+                    >
+                      Revisar
+                    </Badge>
+                  );
+                })()}
+              </div>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-1">

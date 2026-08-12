@@ -45,6 +45,19 @@ export const resetPassword = (id: string) =>
 export const deleteUser = (id: string) => apiClient.delete(`/api/users/${id}`);
 
 export const listCriteria = () => apiClient.get<CriteriaItem[]>('/api/evaluation-criteria');
+
+export type CriteriaVersionItem = {
+  id: string;
+  numero: number;
+  totalPeso: number;
+  createdAt: string;
+  /** Criterios congelados en esa versión. */
+  snapshot: Array<{ id: string; nombre: string; peso: number; orden: number }>;
+  evaluaciones: number;
+};
+
+export const listCriteriaVersions = () =>
+  apiClient.get<CriteriaVersionItem[]>('/api/evaluation-criteria/versions');
 export const createCriteria = (body: Omit<CriteriaItem, 'id'>) =>
   apiClient.post<CriteriaItem>('/api/evaluation-criteria', body);
 export const updateCriteria = (id: string, body: Partial<CriteriaItem>) =>

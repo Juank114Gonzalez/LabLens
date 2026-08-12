@@ -18,6 +18,28 @@ export const INITIATIVE_STATUS_LABELS: Record<InitiativeStatus, string> = {
   ARCHIVED: 'Archivada',
 };
 
+/**
+ * Tonos del badge de estado de la iniciativa. Mismo motivo que en el badge de
+ * evaluación: `variant="secondary"` queda casi negro sobre la tarjeta, así que
+ * el estado se pinta con el azul de la identidad salvo donde otro color informa
+ * mejor — ámbar mientras algo está en curso, rojo para lo rechazado.
+ */
+const INITIATIVE_STATUS_TONES: Record<InitiativeStatus, string> = {
+  DRAFT: 'bg-muted text-muted-foreground',
+  REGISTERED: 'bg-primary/20 text-lab',
+  TRIAGED_LAB: 'bg-primary/20 text-lab',
+  TRIAGED_EXTERNAL: 'bg-chart-4/20 text-chart-4',
+  UNDER_REVIEW: 'bg-signal/20 text-signal',
+  EVALUATED: 'bg-primary/20 text-lab',
+  APPROVED: 'bg-success/20 text-success',
+  REJECTED: 'bg-destructive/15 text-destructive',
+  ARCHIVED: 'bg-muted text-muted-foreground',
+};
+
+export function initiativeStatusTone(status: string): string {
+  return INITIATIVE_STATUS_TONES[status as InitiativeStatus] ?? 'bg-primary/20 text-lab';
+}
+
 export const URGENCY_OPTIONS = ['Baja', 'Media', 'Alta'] as const;
 
 export function formatBytes(size: number) {

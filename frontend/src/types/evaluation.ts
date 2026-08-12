@@ -28,6 +28,20 @@ export type BusinessCase = {
   recomendacionFinal: string;
 };
 
+/**
+ * Contraste entre el triage rápido y la evaluación profunda. Acumulado, es la
+ * medición de precisión del filtro que pide el enunciado; por evaluación, le
+ * avisa al gestor de que ese caso merece una segunda mirada.
+ */
+export type TriageComparison = {
+  huboTriage: boolean;
+  clasificacionCoincide: boolean | null;
+  mesaCoincide: boolean | null;
+  triageClassificationNombre: string | null;
+  triageWorkTableNombre: string | null;
+  triageConfidence: number | null;
+};
+
 export type EvaluationResult = {
   id: string;
   status: string;
@@ -37,6 +51,10 @@ export type EvaluationResult = {
   priority: string | null;
   priorityJustification: string | null;
   criteriaScores: CriterionScore[];
+  /** Versión compartida de la configuración de criterios con la que se puntuó. */
+  criteriaVersion: { numero: number; createdAt: string } | null;
+  /** Nulo en evaluaciones cerradas antes de que esto se registrara. */
+  triageComparison: TriageComparison | null;
   classification: {
     id: string;
     nombre: string;

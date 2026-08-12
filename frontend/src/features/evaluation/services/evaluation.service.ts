@@ -19,6 +19,8 @@ export async function listEvaluations() {
       id: string;
       status: string;
       readinessStatus?: string;
+      /** JSON sin tipar; se estrecha con los helpers de `evaluation/lib/status`. */
+      results: unknown;
       initiative: { id: string; nombre: string; status: string };
       conversation: { id: string; status: string; updatedAt: string } | null;
       evaluator: { id: string; name: string } | null;

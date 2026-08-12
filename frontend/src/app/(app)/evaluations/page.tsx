@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Search, Trash2, X } from 'lucide-react';
+import { ChevronDown, FileText, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,11 @@ import {
   listEvaluations,
 } from '@/features/evaluation/services/evaluation.service';
 import { NewEvaluationDialog } from '@/features/evaluation/components/new-evaluation-dialog';
-import { evaluationStatusLabel, readinessLabel } from '@/features/evaluation/lib/status';
+import {
+  evaluationStatusLabel,
+  readinessLabel,
+  triageDisagreement,
+} from '@/features/evaluation/lib/status';
 import { useConfirmDialog } from '@/shared/components/confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { useAuthStore } from '@/stores/auth.store';
@@ -39,6 +43,7 @@ export default function EvaluationsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [evaluator, setEvaluator] = useState('');
+  const [soloDesacuerdos, setSoloDesacuerdos] = useState(false);
 
   const items = useMemo(() => query.data ?? [], [query.data]);
 
@@ -68,6 +73,7 @@ export default function EvaluationsPage() {
     return items.filter((item) => {
       if (status && item.status !== status) return false;
       if (evaluator && item.evaluator?.name !== evaluator) return false;
+      if (soloDesacuerdos && !triageDisagreement(item.results)) return false;
       if (!needle) return true;
 
       // La búsqueda libre cubre lo que alguien recuerda de memoria — incluida la
@@ -80,14 +86,21 @@ export default function EvaluationsPage() {
       ];
       return haystack.some((field) => normalize(field).includes(needle));
     });
-  }, [items, search, status, evaluator]);
+  }, [items, search, status, evaluator, soloDesacuerdos]);
 
-  const hasFilters = Boolean(search || status || evaluator);
+  const hasFilters = Boolean(search || status || evaluator || soloDesacuerdos);
+
+  /** Cuántas hay con desacuerdo, para no ofrecer un filtro que devuelve nada. */
+  const desacuerdos = useMemo(
+    () => items.filter((item) => triageDisagreement(item.results)).length,
+    [items],
+  );
 
   function clearFilters() {
     setSearch('');
     setStatus('');
     setEvaluator('');
+    setSoloDesacuerdos(false);
   }
 
   const deleteMutation = useMutation({
@@ -176,6 +189,20 @@ export default function EvaluationsPage() {
                     options={evaluatorOptions}
                   />
                 ) : null}
+
+                {/* Igual que los demás filtros: solo aparece si devuelve algo. */}
+                {desacuerdos > 0 ? (
+                  <label className="border-input bg-secondary/40 hover:border-primary/50 has-focus-visible:ring-ring flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm transition-colors has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:ring-2">
+                    <input
+                      type="checkbox"
+                      className="accent-primary size-3.5"
+                      checked={soloDesacuerdos}
+                      onChange={(e) => setSoloDesacuerdos(e.target.checked)}
+                    />
+                    Solo por revisar
+                    <span className="text-muted-foreground text-xs">({desacuerdos})</span>
+                  </label>
+                ) : null}
               </div>
 
               {hasFilters ? (
@@ -220,8 +247,15 @@ export default function EvaluationsPage() {
                       <Link href={href} className="min-w-0 flex-1 px-4 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="font-medium">
+                            <p className="flex flex-wrap items-center gap-2 font-medium">
                               {item.initiative.nombre || 'Iniciativa'}
+                              {/* El desacuerdo entre triage y evaluación marca los
+                                  casos ambiguos, que son los que piden ojo humano. */}
+                              {triageDisagreement(item.results) ? (
+                                <span className="bg-signal/20 text-signal rounded-md px-1.5 py-0.5 text-[11px] font-semibold">
+                                  Revisar
+                                </span>
+                              ) : null}
                             </p>
                             <p className="text-muted-foreground text-xs">
                               {evaluationStatusLabel(item.status)}
@@ -238,6 +272,23 @@ export default function EvaluationsPage() {
                           </p>
                         </div>
                       </Link>
+
+                      {/* Enlace aparte a la iniciativa: la fila entera lleva a la
+                          evaluación, así que sin esto no había forma de llegar al
+                          origen sin buscarlo a mano en el otro listado. */}
+                      <div className="flex items-center">
+                        <Button
+                          asChild
+                          size="icon-sm"
+                          variant="ghost"
+                          title="Ver la iniciativa evaluada"
+                        >
+                          <Link href={routes.initiative(item.initiative.id)}>
+                            <FileText className="size-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
+
                       {isAdmin ? (
                         <div className="flex items-center pr-3">
                           <Button
