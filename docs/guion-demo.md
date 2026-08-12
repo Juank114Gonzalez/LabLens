@@ -87,7 +87,9 @@ Vuelve al **Dashboard**. Señala tres cosas y termina:
 
 **¿Por qué la API de Anthropic y no Bedrock?** Es el mismo modelo. Bedrock lo sirve a través de AWS; nosotros lo consumimos directo para iterar más rápido dentro del plazo. El cambio es el cliente del SDK —`AnthropicBedrockMantle` en lugar de `Anthropic`— y el prefijo `anthropic.` en el id del modelo. Nada del código que lo usa cambia.
 
-**¿Y si el modelo se equivoca en la clasificación?** La vista de auditoría lista todo lo enrutado fuera del Lab con su justificación y confianza, filtrable por canal y fecha. Es el instrumento para medir el 95% y para reclasificar a mano.
+**¿Y si el modelo se equivoca en la clasificación?** La vista de auditoría lista todo lo enrutado fuera del Lab con su justificación y confianza, filtrable por canal, mesa y fecha, y permite reclasificar a mano.
+
+**¿Cómo miden el 95% de acierto?** Cada iniciativa que llega a evaluación produce dos dictámenes independientes sobre el mismo caso: el del triage, emitido en segundos al recibirla, y el de la evaluación profunda, supervisada por un evaluador. La evaluación no ve el veredicto del triage —inyectárselo la anclaría a coincidir—, así que el contraste entre ambos es una medición legítima y se guarda en `results.triageComparison` de cada evaluación. La tasa se acumula sola con el uso, sin necesidad de un set etiquetado a mano.
 
 **¿Qué pasa si el LLM falla en el envío?** La iniciativa se guarda igual, en estado registrado, y un evaluador la clasifica manualmente. Nunca se pierde un envío.
 

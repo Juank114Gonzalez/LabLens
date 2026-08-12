@@ -17,10 +17,11 @@ import {
 } from '@/components/ui/table';
 import { branding } from '@/config/branding';
 import { routes } from '@/config/routes';
+import { DonutShare } from '@/features/dashboard/components/charts/donut-share';
 import { ShareBar } from '@/features/dashboard/components/charts/share-bar';
 import { StatTile } from '@/features/dashboard/components/charts/stat-tile';
 import { TrendLines } from '@/features/dashboard/components/charts/trend-lines';
-import { colorForClassification } from '@/features/dashboard/lib/viz';
+import { colorForArea, colorForClassification } from '@/features/dashboard/lib/viz';
 import { getInitiativeStats } from '@/features/dashboard/services/stats.service';
 import { listInitiatives } from '@/features/initiative/services/initiative.service';
 import { EmptyState } from '@/shared/components/empty-state';
@@ -92,10 +93,9 @@ export function DashboardView() {
         </section>
       )}
 
-      {/* Una sola columna desde que se ocultó la tarjeta de canal: con
-          `lg:grid-cols-2` la clasificación quedaba a media pantalla y el resto
-          vacío. Volver a dos columnas si el canal regresa. */}
-      <section className="grid gap-4">
+      {/* Dos columnas otra vez: la tarjeta de áreas ocupa el hueco que dejó la
+          de canal de origen cuando se ocultó. */}
+      <section className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/70 bg-card/60 shadow-none">
           <CardHeader>
             <CardTitle className="font-heading text-lg">
@@ -122,6 +122,31 @@ export function DashboardView() {
         {/* Tarjeta «Canal de origen» oculta: el formulario público dejó de
             preguntar el canal, así que todo entra como INTERNAL y la gráfica
             sería una sola barra. `data.bySource` sigue llegando de la API. */}
+
+        <Card className="border-border/70 bg-card/60 shadow-none">
+          <CardHeader>
+            <CardTitle className="font-heading text-lg">Áreas que aportan ideas</CardTitle>
+            <p className="text-muted-foreground text-sm">
+              Según el área declarada por quien envía. Las iniciativas cargadas desde el
+              back-office no la registran y quedan fuera del reparto.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {stats.isLoading || !data ? (
+              <Skeleton className="h-44 w-full" />
+            ) : (
+              <DonutShare
+                segments={data.byArea.map((item) => ({
+                  key: item.area,
+                  label: item.area,
+                  value: item.count,
+                  color: colorForArea(item.area),
+                }))}
+                emptyLabel="Todavía ninguna iniciativa llegó por el formulario público."
+              />
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <Card className="border-border/70 bg-card/60 shadow-none">

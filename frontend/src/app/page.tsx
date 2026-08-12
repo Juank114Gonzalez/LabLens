@@ -25,7 +25,7 @@ export default function HomePage() {
       {/* La marca institucional abre la página, así que va más grande que en el
           resto del producto (donde `AchLogo` usa su h-8 por defecto). */}
       <header className="relative flex justify-center">
-        <AchLogo className="h-12 sm:h-14" />
+        <AchLogo className="h-16 sm:h-20" />
       </header>
 
       <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 py-10 text-center">

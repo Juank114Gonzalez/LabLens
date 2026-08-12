@@ -12,8 +12,14 @@ export function roleLabel(role: string | undefined): string {
   return ROLE_LABELS[role as UserRole] ?? role;
 }
 
-export function homeForRole(role: UserRole): string {
-  if (role === 'ADMIN') return routes.admin;
+/**
+ * Dónde aterriza cualquiera al iniciar sesión.
+ *
+ * Ya no depende del rol —antes el admin caía en la gestión de usuarios, que es
+ * mantenimiento y no dice nada del estado del portafolio— así que la función
+ * dejó de recibirlo. La administración sigue a un clic en el menú.
+ */
+export function homeRoute(): string {
   return routes.dashboard;
 }
 

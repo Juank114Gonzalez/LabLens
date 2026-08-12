@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/errors';
 import { routes } from '@/config/routes';
 import { login, loginWithMicrosoft, logout } from '@/features/auth/services/auth.service';
-import { homeForRole } from '@/features/auth/lib/roles';
+import { homeRoute } from '@/features/auth/lib/roles';
 import type { LoginFormValues } from '@/features/auth/types/auth.schema';
 import { useAuthStore } from '@/stores/auth.store';
 import { useConversationMetaStore } from '@/stores/conversation-meta.store';
@@ -25,7 +25,7 @@ export function useAuth() {
     onSuccess: (session) => {
       setSession(session);
       toast.success('Sesión iniciada');
-      router.replace(homeForRole(session.user.role));
+      router.replace(homeRoute());
     },
     onError: (error) => toast.error(getErrorMessage(error, 'No se pudo iniciar sesión')),
   });
@@ -39,7 +39,7 @@ export function useAuth() {
     onSuccess: (session) => {
       setSession(session);
       toast.success('Sesión iniciada con Microsoft');
-      router.replace(homeForRole(session.user.role));
+      router.replace(homeRoute());
     },
     onError: (error: unknown) => {
       // Avoid toast if Microsoft login popup was closed by user

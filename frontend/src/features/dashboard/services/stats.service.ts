@@ -10,6 +10,8 @@ export type InitiativeStats = {
   byStatus: Array<{ status: InitiativeStatus; count: number }>;
   bySource: Array<{ sourceType: SourceType; count: number }>;
   byClassification: Array<{ id: string; nombre: string; count: number }>;
+  /** Área del solicitante, ya ordenada de mayor a menor. Excluye las vacías. */
+  byArea: Array<{ area: string; count: number }>;
   timeline: Array<{ date: string; lab: number; external: number; pending: number }>;
 };
 

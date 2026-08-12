@@ -17,6 +17,16 @@ type AppShellProps = {
 export function AppShell({ children, showRightPanel = true }: AppShellProps) {
   const params = useParams<{ conversationId?: string }>();
   const conversationId = params?.conversationId;
+
+  /*
+   * El panel derecho es el estado de *una* entrevista, así que solo existe
+   * cuando hay una abierta. El layout envuelve todas las páginas del
+   * back-office, y sin esta condición aparecía también en iniciativas,
+   * evaluaciones y administración, donde nunca tuvo nada que mostrar: se veía
+   * una columna con "Estado de Evaluación · Modo entrevista · sin juicios" y un
+   * marco vacío debajo, robando 340px de ancho a la tabla.
+   */
+  const panelVisible = showRightPanel && Boolean(conversationId);
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
@@ -71,7 +81,7 @@ export function AppShell({ children, showRightPanel = true }: AppShellProps) {
           >
             <Menu className="size-4" />
           </Button>
-          {showRightPanel ? (
+          {panelVisible ? (
             <Button
               type="button"
               size="icon"
@@ -88,7 +98,7 @@ export function AppShell({ children, showRightPanel = true }: AppShellProps) {
         <main className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
       </div>
 
-      {showRightPanel ? (
+      {panelVisible ? (
         <>
           <div
             className={cn(

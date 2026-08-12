@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { routes } from '@/config/routes';
 import {
-  homeForRole,
+  homeRoute,
   isPathAllowedForRole,
 } from '@/features/auth/lib/roles';
 import { useAuthStore } from '@/stores/auth.store';
@@ -25,7 +25,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (!isPathAllowedForRole(pathname, user.role)) {
-      router.replace(homeForRole(user.role));
+      router.replace(homeRoute());
     }
   }, [hydrated, pathname, router, user]);
 

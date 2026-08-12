@@ -30,6 +30,10 @@
   --color-viz-3: var(--viz-3);
   --color-viz-4: var(--viz-4);
   --color-viz-5: var(--viz-5);
+  --color-viz-6: var(--viz-6);
+  --color-viz-7: var(--viz-7);
+  --color-viz-8: var(--viz-8);
+  --color-viz-9: var(--viz-9);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -103,15 +107,22 @@
   --viz-3: #1baf7a;
   --viz-4: #eda100;
   --viz-5: #e87ba4;
+  /* 6 a 9 se añadieron para el reparto por área: son nueve áreas y con cinco
+     ranuras habría que reciclar colores, que es justo lo que rompe la promesa
+     de que un color identifica siempre a la misma entidad. */
+  --viz-6: #7c4dee;
+  --viz-7: #0e9aae;
+  --viz-8: #d4483f;
+  --viz-9: #6b7f99;
   --radius: 0.75rem;
-  --sidebar: oklch(0.975 0.01 165);
-  --sidebar-foreground: oklch(0.2 0.02 165);
-  --sidebar-primary: oklch(0.45 0.11 175);
-  --sidebar-primary-foreground: oklch(0.98 0.01 165);
-  --sidebar-accent: oklch(0.94 0.02 175);
-  --sidebar-accent-foreground: oklch(0.22 0.03 175);
-  --sidebar-border: oklch(0.9 0.015 165);
-  --sidebar-ring: oklch(0.55 0.1 175);
+  --sidebar: oklch(0.975 0.006 262);
+  --sidebar-foreground: oklch(0.2 0.025 262);
+  --sidebar-primary: oklch(0.52 0.22 262);
+  --sidebar-primary-foreground: oklch(0.99 0.005 262);
+  --sidebar-accent: oklch(0.93 0.05 262);
+  --sidebar-accent-foreground: oklch(0.42 0.18 262);
+  --sidebar-border: oklch(0.9 0.012 262);
+  --sidebar-ring: oklch(0.55 0.18 262);
 }
 
 .dark {
@@ -158,14 +169,20 @@
   --viz-3: #199e70;
   --viz-4: #c98500;
   --viz-5: #d55181;
-  --sidebar: oklch(0.16 0.02 165);
-  --sidebar-foreground: oklch(0.94 0.01 165);
-  --sidebar-primary: oklch(0.78 0.12 175);
-  --sidebar-primary-foreground: oklch(0.14 0.02 175);
-  --sidebar-accent: oklch(0.23 0.03 175);
-  --sidebar-accent-foreground: oklch(0.94 0.02 175);
-  --sidebar-border: oklch(0.95 0.01 165 / 10%);
-  --sidebar-ring: oklch(0.72 0.11 175);
+  --viz-6: #9b78f0;
+  --viz-7: #2bb3c6;
+  --viz-8: #e8635a;
+  --viz-9: #8fa3bd;
+  /* El ítem activo va con fondo azul tintado y texto en el azul luminoso, para
+     que se lea como parte de la identidad y no como un gris más. */
+  --sidebar: oklch(0.165 0.03 262);
+  --sidebar-foreground: oklch(0.95 0.01 262);
+  --sidebar-primary: oklch(0.58 0.21 262);
+  --sidebar-primary-foreground: oklch(0.99 0.005 262);
+  --sidebar-accent: oklch(0.3 0.08 262);
+  --sidebar-accent-foreground: oklch(0.78 0.14 262);
+  --sidebar-border: oklch(0.9 0.02 262 / 14%);
+  --sidebar-ring: oklch(0.65 0.19 262);
 }
 
 @layer base {

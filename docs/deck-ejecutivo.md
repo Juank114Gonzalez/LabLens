@@ -56,7 +56,9 @@ Dos caminos, no uno:
 
 **Mensaje:** quien envía no queda esperando; ve la decisión antes de cerrar la pestaña.
 
-*Visual:* captura de la pantalla de resultado — categoría, confianza, justificación y mesa de trabajo, con el aviso de que el área ya fue notificada por correo.
+*Visual:* captura de la pantalla de resultado — categoría, justificación y mesa de trabajo responsable.
+
+*Nota para quien presente:* la confianza del triage es un dato interno y no aparece en esta pantalla; se ve en la bandeja del evaluador. La notificación por correo a la mesa está implementada pero desactivada (sin `SMTP_HOST` configurado), así que no la anuncies como parte de la demo.
 
 ---
 

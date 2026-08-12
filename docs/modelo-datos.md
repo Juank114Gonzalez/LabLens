@@ -1,6 +1,14 @@
 # Modelo de datos
 
-Refleja `backend/prisma/schema.prisma` después de las migraciones `20260805000000_source_type_and_triage` y `20260806000000_remove_generator_role`.
+Refleja `backend/prisma/schema.prisma` después de la última migración aplicada, `20260811000000_criteria_decimal_weights`.
+
+Las tres migraciones que dejaron el modelo en su forma actual:
+
+| Migración | Qué cambió |
+| --- | --- |
+| `20260806200000_public_form_v2` | Añadió a `Initiative` los campos del formulario público de 11 preguntas |
+| `20260806230000_multi_select_scope` | Convirtió `impactaA`, `productoRelacionado` y `beneficios` de `TEXT` a `TEXT[]` |
+| `20260811000000_criteria_decimal_weights` | `EvaluationCriteria.peso` de `INTEGER` a `DOUBLE PRECISION` |
 
 ## 1. Diagrama entidad-relación
 
@@ -36,13 +44,21 @@ erDiagram
         enum status "DRAFT..ARCHIVED"
         enum sourceType "INTERNAL | EXTERNAL_CONTRACTOR | INTERNATIONAL_REFERENCE"
         string nombre
-        string areaProcesoImpactado
-        string urgencia
-        string impacto
-        string necesidad
-        string porQueAhora
-        string paraQue
-        string comoSeResuelveHoy
+        string necesidad "ambos formularios"
+        string areaProcesoImpactado "formulario interno"
+        string areaInvolucrada "formulario interno"
+        string urgencia "formulario interno"
+        string expectativaSolucion "formulario interno"
+        string porQueAhora "formulario interno"
+        string paraQue "formulario interno"
+        string comoSeResuelveHoy "formulario interno"
+        string areaSolicitante "canal público"
+        string solucionPropuesta "canal público"
+        string_array impactaA "canal público"
+        string_array productoRelacionado "canal público"
+        string_array beneficios "canal público"
+        bool tieneInteresado "canal público, nullable"
+        string impacto "estimación cuantitativa"
         string submitterEmail "canal público"
         string referenceOrganization "solo referencia internacional"
         uuid triageClassificationId FK
@@ -70,7 +86,7 @@ erDiagram
     EvaluationCriteria {
         uuid id PK
         string nombre
-        int peso "los activos suman 100"
+        float peso "los activos suman 100; admite 12.5"
         int orden
         bool activo
     }
@@ -103,7 +119,7 @@ erDiagram
 
 ## 3. Catálogos sembrados
 
-Los seis criterios corresponden a la sección 5.3 del enunciado. Los pesos declarados son 20 / 20 / 20 / 15 / 12,5 / 12,5; como el campo es entero, el 12,5 se reparte en 13 (Escalabilidad) y 12 (Factibilidad técnica) para sumar 100.
+Los seis criterios corresponden a la sección 5.3 del enunciado, con sus pesos declarados exactos.
 
 | Criterio | Peso |
 | --- | --- |
@@ -111,8 +127,10 @@ Los seis criterios corresponden a la sección 5.3 del enunciado. Los pesos decla
 | Nivel de innovación | 20 |
 | Valor para el negocio | 20 |
 | Impacto al cliente | 15 |
-| Escalabilidad | 13 |
-| Factibilidad técnica | 12 |
+| Escalabilidad | 12,5 |
+| Factibilidad técnica | 12,5 |
+
+El `promptContext` de estos criterios incorpora además las definiciones y preguntas orientadoras de la **sección 9.1** (criterios de valor de ACH). Esa sección detalla cómo entender el valor, no reemplaza el modelo de scoring: sus cinco criterios se reparten entre estos seis — potencial de ingresos, protección del negocio y diversificación caen en *Valor para el negocio*; experiencia del cliente en *Impacto al cliente*; tamaño de mercado en *Escalabilidad*. Puntuar diez dimensiones solapadas diluiría el score sin agregar criterio.
 
 | Clasificación | ¿Se queda en el Lab? | Mesa por defecto |
 | --- | --- | --- |
@@ -131,12 +149,28 @@ Las iniciativas puramente de gobierno de datos o ciberseguridad se enrutan a **S
 ```json
 {
   "criteriaScores": [
-    { "criteriaId": "uuid", "nombre": "Alineación estratégica", "peso": 20, "score": 78, "justification": "…" }
+    { "criteriaId": "uuid", "nombre": "Alineación estratégica", "peso": 20, "score": 78, "justification": "…" },
+    { "criteriaId": "uuid", "nombre": "Escalabilidad", "peso": 12.5, "score": 60, "justification": "…" }
   ],
   "fit": 74,
-  "priority": "Alta"
+  "priority": "Alta",
+  "priorityJustification": "…",
+  "classificationJustification": "…",
+  "workTableJustification": "…",
+  "triageComparison": {
+    "huboTriage": true,
+    "clasificacionCoincide": true,
+    "mesaCoincide": false,
+    "triageClassificationNombre": "Innovación adyacente",
+    "triageWorkTableNombre": "Laboratorio Digital",
+    "triageConfidence": 0.87
+  }
 }
 ```
+
+**Sobre `triageComparison`.** Registra si el dictamen profundo coincidió con el filtro rápido. No se le muestra al modelo durante la evaluación: inyectar el veredicto del triage en su contexto lo anclaría a coincidir, y se perdería lo único que hace útil el contraste — que son dos opiniones independientes sobre el mismo caso. Acumulado sobre las iniciativas evaluadas, es la medición de la precisión del filtro que exige la sección 3 del enunciado (95%), sin necesidad de construir a mano un set etiquetado.
+
+Los campos `clasificacionCoincide` y `mesaCoincide` son `null`, no `false`, cuando el triage mandó la iniciativa a revisión manual en lugar de arriesgar una clasificación. Contar eso como error castigaría justo la conducta prudente. `huboTriage` es `false` para las iniciativas del formulario interno, que hoy no pasan por triage.
 
 `Evaluation.businessCase` (redactado por el modelo, estructura validada):
 

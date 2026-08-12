@@ -7,8 +7,17 @@
    - **Área interna de ACH** — Operaciones, Negocio, Riesgos, TI o Canales Digitales.
    - **Organización externa** — proveedores, aliados o contractors con acceso.
    - **Referencia internacional** — un benchmark visto en un congreso o publicación. Pide además la organización, el evento, el enlace y por qué es relevante para ACH.
-3. Diligencia los atributos obligatorios: quién envía, expectativa de la solución, nombre, área o proceso impactado, áreas a involucrar, urgencia, impacto, y la compuerta mínima (qué necesita, por qué ahora, para qué, cómo se resuelve hoy). Registra al menos una empresa o persona que reporte el dolor.
-4. Envía. En segundos verás la categoría asignada, la justificación, la mesa de trabajo responsable y —si no corresponde al Lab— la confirmación de que el área ya fue notificada por correo.
+3. Responde las once preguntas, repartidas en cuatro pasos. Puedes ir y volver entre ellos; el envío nunca es automático.
+
+   | Paso | Preguntas |
+   | --- | --- |
+   | Quién envía | 1 nombre completo · 2 área · 3 correo |
+   | La iniciativa | 4 nombre · 5 problema, dolor u oportunidad · 6 solución propuesta |
+   | Alcance y valor | 7 a quién impacta · 8 producto relacionado · 9 beneficios · 10 estimación del impacto |
+   | Cierre | 11 ¿existe cliente, aliado o área interesada? · evidencias |
+
+   Las preguntas 7, 8 y 9 admiten varias respuestas. Solo si respondes «Sí» a la 11 se piden los datos de contacto de quien reporta el dolor.
+4. Envía. En segundos verás la categoría asignada, la justificación y la mesa de trabajo responsable.
 
 Puedes compartir un enlace directo con el canal preseleccionado: `/submit?source=international` (también `internal` y `external`). Sirve para el QR de un congreso.
 
@@ -46,18 +55,16 @@ curl -X POST http://localhost:3001/api/public/initiatives \
   -d '{
     "sourceType": "INTERNAL",
     "submitterName": "Ana Ríos",
-    "submitterEmail": "ana.rios@ach.com.co",
-    "diligenciadoPor": "Ana Ríos",
-    "expectativaSolucion": "Validar pagos en tiempo real con verificación de identidad.",
+    "areaSolicitante": "Seguridad & Riesgo",
+    "submitterEmail": "ana.rios@achcolombia.com",
     "nombre": "Verificación de identidad en transferencias inmediatas",
-    "areaProcesoImpactado": "Canales Digitales",
-    "areaInvolucrada": "Riesgos, TI",
-    "urgencia": "Alta",
-    "impacto": "Alto",
     "necesidad": "Los bancos reportan fraude en transferencias inmediatas de primer uso.",
-    "porQueAhora": "La entrada de Bre-B multiplica el volumen de transferencias entre desconocidos.",
-    "paraQue": "Reducir el fraude de primer contacto sin agregar fricción al pago.",
-    "comoSeResuelveHoy": "Reglas estáticas por monto, revisadas manualmente.",
+    "solucionPropuesta": "Verificación biométrica con prueba de vida antes de habilitar el primer envío a un destinatario nuevo.",
+    "impactaA": ["Cliente final", "Entidad financiera"],
+    "productoRelacionado": ["ACH en Línea", "Open Finance"],
+    "beneficios": ["Reducción de riesgos", "Mejor experiencia"],
+    "impacto": "Cerca de 12.000 transacciones al mes en el segmento de primer uso.",
+    "tieneInteresado": true,
     "companyContacts": [
       {
         "empresa": "Banco XYZ",
@@ -69,6 +76,12 @@ curl -X POST http://localhost:3001/api/public/initiatives \
     ]
   }'
 ```
+
+**Valores cerrados.** `areaSolicitante`, `impactaA`, `productoRelacionado` y `beneficios` se validan contra catálogos de cadenas literales; un valor fuera de catálogo devuelve `400`. La lista viva está en `backend/src/validators/public-initiative.validator.ts` y su espejo en el frontend, `frontend/src/features/submit/schemas/public-initiative.schema.ts`: ambos deben cambiarse a la vez.
+
+`companyContacts` solo se guarda cuando `tieneInteresado` es `true`; con `false` se descarta aunque venga en el cuerpo. Los campos de la compuerta mínima (`porQueAhora`, `paraQue`, `comoSeResuelveHoy`, `urgencia`, `areaProcesoImpactado`, `areaInvolucrada`, `expectativaSolucion`) **no** los pregunta este canal: son del formulario interno y quedan vacíos.
+
+Para adjuntar evidencias, envía `multipart/form-data` con el JSON anterior en el campo `payload` y los archivos en `files` (máximo 10, 15 MB cada uno).
 
 Respuesta `201`:
 
