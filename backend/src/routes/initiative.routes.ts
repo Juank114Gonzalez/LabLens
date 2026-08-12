@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 import { Router } from 'express';
 import {
+  copyInitiativeController,
   createInitiativeController,
   deleteInitiativeController,
   getInitiativeController,
@@ -8,7 +9,9 @@ import {
   listInitiativeEvaluationsController,
   listInitiativesController,
   registerInitiativeController,
+  retriageInitiativeController,
   startEvaluationController,
+  triageSweepController,
   updateInitiativeController,
 } from '../controllers/initiative.controller.js';
 import { authenticate } from '../middlewares/authenticate.middleware.js';
@@ -19,6 +22,7 @@ import {
   createInitiativeSchema,
   initiativeIdParamsSchema,
   startEvaluationBodySchema,
+  triageSweepBodySchema,
   updateInitiativeSchema,
 } from '../validators/initiative.validator.js';
 
@@ -33,6 +37,14 @@ initiativeRouter.get(
   '/stats',
   authorize(Role.EVALUATOR, Role.ADMIN),
   asyncHandler(getInitiativeStatsController),
+);
+
+// Igual que 'stats': antes de '/:id' para que no se lea como un identificador.
+initiativeRouter.post(
+  '/triage-sweep',
+  authorize(Role.ADMIN),
+  validateRequest(triageSweepBodySchema),
+  asyncHandler(triageSweepController),
 );
 
 initiativeRouter.post(
@@ -67,6 +79,20 @@ initiativeRouter.get(
   '/:id/evaluations',
   validateRequest(initiativeIdParamsSchema, 'params'),
   asyncHandler(listInitiativeEvaluationsController),
+);
+
+initiativeRouter.post(
+  '/:id/triage',
+  authorize(Role.EVALUATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(retriageInitiativeController),
+);
+
+initiativeRouter.post(
+  '/:id/copy',
+  authorize(Role.EVALUATOR, Role.ADMIN),
+  validateRequest(initiativeIdParamsSchema, 'params'),
+  asyncHandler(copyInitiativeController),
 );
 
 initiativeRouter.post(

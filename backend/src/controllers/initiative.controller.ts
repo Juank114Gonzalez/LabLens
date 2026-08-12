@@ -1,11 +1,14 @@
 import type { Request, Response } from 'express';
 import {
+  copyInitiativeForActor,
   createDraftInitiative,
   deleteInitiativeForActor,
   getInitiativeForActor,
   getInitiativeStatsForActor,
   listInitiativesForActor,
   registerInitiativeForActor,
+  retriageInitiativeForActor,
+  runTriageSweep,
   startEvaluation,
   updateInitiativeForActor,
 } from '../services/initiative.service.js';
@@ -17,6 +20,7 @@ import type {
   InitiativeIdParamsDto,
   RegisterInitiativeDto,
   StartEvaluationBodyDto,
+  TriageSweepBodyDto,
   UpdateInitiativeDto,
 } from '../validators/initiative.validator.js';
 
@@ -25,6 +29,24 @@ function requireUser(req: Request) {
     throw new AppError('Authentication required', 401);
   }
   return req.user;
+}
+
+export async function copyInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  sendSuccess(res, await copyInitiativeForActor(id, user), 201);
+}
+
+export async function retriageInitiativeController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { id } = req.params as InitiativeIdParamsDto;
+  sendSuccess(res, await retriageInitiativeForActor(id, user));
+}
+
+export async function triageSweepController(req: Request, res: Response) {
+  const user = requireUser(req);
+  const { alcance } = req.body as TriageSweepBodyDto;
+  sendSuccess(res, await runTriageSweep(user, alcance));
 }
 
 export async function listInitiativesController(req: Request, res: Response) {

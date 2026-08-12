@@ -114,6 +114,11 @@ model Initiative {
   submitterName  String?
   submitterEmail String?
 
+  // Linaje de copias. Una iniciativa triada queda como registro inmutable de lo
+  // que se envió; para iterar sobre ella se saca una copia editable. La copia
+  // conserva de dónde salió para poder comparar el antes y el después.
+  copiedFromId String? @db.Uuid
+
   // Triage rápido: una sola pasada del LLM, independiente del pipeline de evaluación
   triageClassificationId String?   @db.Uuid
   triageWorkTableId      String?   @db.Uuid
@@ -131,11 +136,17 @@ model Initiative {
   attachments          Attachment[]
   evaluations          Evaluation[]
 
+  // SetNull y no Cascade: borrar el original no debe llevarse las copias, que
+  // para entonces ya son iniciativas por derecho propio.
+  copiedFrom Initiative?  @relation("InitiativeCopy", fields: [copiedFromId], references: [id], onDelete: SetNull)
+  copies     Initiative[] @relation("InitiativeCopy")
+
   @@index([userId, updatedAt])
   @@index([status])
   @@index([sourceType])
   @@index([triageClassificationId])
   @@index([triagedAt])
+  @@index([copiedFromId])
 }
 
 model CompanyContact {
@@ -183,6 +194,8 @@ model Evaluation {
   readiness              Json?
   priority               String?
   configVersion          String?
+  /** Versión compartida de la configuración. Nula en las evaluaciones anteriores a que existiera el historial. */
+  criteriaVersionId      String?                    @db.Uuid
   criteriaSnapshot       Json?
   weightsSnapshot        Json?
   results                Json?
@@ -200,9 +213,13 @@ model Evaluation {
   classification         IntelligentClassification? @relation(fields: [classificationId], references: [id], onDelete: SetNull)
   workTable              WorkTable?                 @relation(fields: [workTableId], references: [id], onDelete: SetNull)
   conversation           Conversation?
+  // SetNull: si alguien borrara una versión, la evaluación conserva su propio
+  // criteriaSnapshot y sigue siendo auditable por sí sola.
+  criteriaVersion        CriteriaVersion?           @relation(fields: [criteriaVersionId], references: [id], onDelete: SetNull)
 
   @@index([initiativeId, createdAt])
   @@index([evaluatorId])
+  @@index([criteriaVersionId])
 }
 
 model Conversation {
@@ -228,12 +245,42 @@ model Message {
   @@index([conversationId, createdAt])
 }
 
+/**
+ * Foto de la configuración de criterios en un momento dado.
+ *
+ * La identidad es el `hash` del contenido, no la fecha: mientras nadie toque los
+ * criterios, todas las evaluaciones comparten versión y se pueden comparar entre
+ * sí. `configVersion` en Evaluation no sirve para eso porque incluye el instante
+ * en que se abrió cada una, así que dos evaluaciones idénticas salían con
+ * versiones distintas.
+ *
+ * `numero` es el identificador legible (v1, v2, …) porque nadie quiere leer un
+ * hash en pantalla.
+ */
+model CriteriaVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  numero    Int      @unique
+  hash      String   @unique
+  /** Criterios activos completos: nombre, descripción, promptContext, peso y orden. */
+  snapshot  Json
+  totalPeso Float
+  createdAt DateTime @default(now())
+
+  evaluations Evaluation[]
+
+  @@index([createdAt])
+}
+
 model EvaluationCriteria {
   id            String   @id @default(uuid()) @db.Uuid
   nombre        String
   descripcion   String
   promptContext String
-  peso          Int
+  // Float y no Int porque el enunciado (5.3) declara pesos de 12.5%, ni Decimal
+  // porque ese tipo llega a JS como objeto de decimal.js y rompería en silencio
+  // las sumas de pesos repartidas por el pipeline. Los pesos son múltiplos de
+  // 0.5, exactos en binario; aun así las comparaciones usan tolerancia.
+  peso          Float
   activo        Boolean  @default(true)
   orden         Int      @default(0)
   createdAt     DateTime @default(now())

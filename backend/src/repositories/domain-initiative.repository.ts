@@ -121,21 +121,37 @@ export async function getInitiativeStats() {
   const windowStart = daysAgo(DASHBOARD_WINDOW_DAYS);
   const previousWindowStart = daysAgo(DASHBOARD_WINDOW_DAYS * 2);
 
-  const [total, currentWindow, previousWindow, byStatus, bySource, byClassification] =
-    await Promise.all([
-      prisma.initiative.count(),
-      prisma.initiative.count({ where: { createdAt: { gte: windowStart } } }),
-      prisma.initiative.count({
-        where: { createdAt: { gte: previousWindowStart, lt: windowStart } },
-      }),
-      prisma.initiative.groupBy({ by: ['status'], _count: { _all: true } }),
-      prisma.initiative.groupBy({ by: ['sourceType'], _count: { _all: true } }),
-      prisma.initiative.groupBy({
-        by: ['triageClassificationId'],
-        _count: { _all: true },
-        where: { triageClassificationId: { not: null } },
-      }),
-    ]);
+  const [
+    total,
+    currentWindow,
+    previousWindow,
+    byStatus,
+    bySource,
+    byClassification,
+    byArea,
+  ] = await Promise.all([
+    prisma.initiative.count(),
+    prisma.initiative.count({ where: { createdAt: { gte: windowStart } } }),
+    prisma.initiative.count({
+      where: { createdAt: { gte: previousWindowStart, lt: windowStart } },
+    }),
+    prisma.initiative.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.initiative.groupBy({ by: ['sourceType'], _count: { _all: true } }),
+    prisma.initiative.groupBy({
+      by: ['triageClassificationId'],
+      _count: { _all: true },
+      where: { triageClassificationId: { not: null } },
+    }),
+    // Qué áreas están aportando ideas. Se excluyen las cadenas vacías: el
+    // formulario interno no pregunta el área del solicitante, así que contarlas
+    // pintaría un bloque enorme sin nombre que no dice nada.
+    prisma.initiative.groupBy({
+      by: ['areaSolicitante'],
+      _count: { _all: true },
+      where: { areaSolicitante: { not: '' } },
+      orderBy: { _count: { areaSolicitante: 'desc' } },
+    }),
+  ]);
 
   const classifications = await prisma.intelligentClassification.findMany({
     select: { id: true, nombre: true },
@@ -194,6 +210,10 @@ export async function getInitiativeStats() {
       nombre: classificationName.get(item.triageClassificationId as string) ?? 'Sin clasificar',
       count: item._count._all,
     })),
+    byArea: byArea.map((item) => ({
+      area: item.areaSolicitante,
+      count: item._count._all,
+    })),
     timeline: [...buckets.entries()].map(([date, value]) => ({ date, ...value })),
   };
 }
@@ -250,6 +270,116 @@ export async function applyTriageResult(
     where: { id },
     data,
     include: initiativeInclude,
+  });
+}
+
+/**
+ * Ids para los barridos de triage.
+ *
+ * `pendientes` devuelve solo lo que nunca se clasificó —las del formulario
+ * interno y aquellas en las que el modelo falló—; `todas` reclasifica el
+ * histórico, que es destructivo y por eso vive detrás de una acción distinta.
+ * Los borradores quedan fuera en ambos casos: todavía se están escribiendo.
+ */
+export async function listInitiativeIdsForTriage(alcance: 'pendientes' | 'todas') {
+  const rows = await prisma.initiative.findMany({
+    where: {
+      status: { not: InitiativeStatus.DRAFT },
+      ...(alcance === 'pendientes' ? { triagedAt: null } : {}),
+    },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  });
+
+  return rows.map((row) => row.id);
+}
+
+/**
+ * Duplica una iniciativa como borrador editable.
+ *
+ * Arrastra respuestas, contactos y evidencias, pero **no** el triage: la copia
+ * debe clasificarse por sus propios méritos una vez editada, y heredar el
+ * dictamen del original haría creer que ya fue analizada.
+ *
+ * Las evidencias reutilizan el `publicId` del original en vez de volver a subir
+ * el archivo; `deleteAttachmentForActor` comprueba cuántas filas lo usan antes
+ * de destruirlo en Cloudinary.
+ */
+export async function copyInitiative(id: string, userId: string) {
+  const original = await prisma.initiative.findUnique({
+    where: { id },
+    include: { companyContacts: true, attachments: true },
+  });
+
+  if (!original) {
+    throw new AppError('Initiative not found', 404);
+  }
+
+  const {
+    id: _id,
+    userId: _userId,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    companyContacts,
+    attachments,
+    status: _status,
+    triageClassificationId: _tc,
+    triageWorkTableId: _tw,
+    triageReasoning: _tr,
+    triageConfidence: _tconf,
+    triagedAt: _tat,
+    notificationSentAt: _nsa,
+    copiedFromId: _cf,
+    nombre,
+    ...campos
+  } = original;
+
+  return prisma.initiative.create({
+    data: {
+      ...campos,
+      nombre: `${nombre} (copia)`.trim(),
+      userId,
+      status: InitiativeStatus.DRAFT,
+      copiedFromId: original.id,
+      companyContacts: {
+        create: companyContacts.map((c) => ({
+          empresa: c.empresa,
+          contacto: c.contacto,
+          cargo: c.cargo,
+          correo: c.correo,
+          telefono: c.telefono,
+        })),
+      },
+      attachments: {
+        create: attachments.map((a) => ({
+          publicId: a.publicId,
+          secureUrl: a.secureUrl,
+          originalName: a.originalName,
+          mimeType: a.mimeType,
+          size: a.size,
+        })),
+      },
+    },
+    include: initiativeInclude,
+  });
+}
+
+/**
+ * Solo lo que decidió el triage. Se lee al cerrar una evaluación para dejar
+ * registrado si el dictamen profundo coincidió con el filtro rápido, así que
+ * carga dos ids y un nombre en vez de todas las relaciones de la iniciativa.
+ */
+export async function findTriageOutcome(id: string) {
+  return prisma.initiative.findUnique({
+    where: { id },
+    select: {
+      triageClassificationId: true,
+      triageWorkTableId: true,
+      triageConfidence: true,
+      triagedAt: true,
+      triageClassification: { select: { nombre: true } },
+      triageWorkTable: { select: { nombre: true } },
+    },
   });
 }
 

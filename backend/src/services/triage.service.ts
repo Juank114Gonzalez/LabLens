@@ -9,6 +9,7 @@ import {
 } from '../repositories/domain-initiative.repository.js';
 import { listWorkTables } from '../repositories/work-table.repository.js';
 import { AppError } from '../utils/AppError.js';
+import { buildInitiativeContext } from '../utils/initiative-context.js';
 import { generatePlainText } from './llm.service.js';
 import { notifyWorkTable } from './notification.service.js';
 
@@ -132,54 +133,6 @@ function buildCatalog(
     .join('\n');
 }
 
-function buildInitiativeBlock(
-  initiative: NonNullable<Awaited<ReturnType<typeof findInitiativeById>>>,
-): string {
-  // Los dos formularios (público de 12 preguntas e interno) llenan subconjuntos
-  // distintos, así que se omite lo vacío: mandarle al modelo una decena de
-  // cadenas en blanco solo introduce ruido en la clasificación.
-  const omitEmpty = <T,>(value: T | '' | null | undefined): T | undefined =>
-    value === '' || value === null || value === undefined ? undefined : value;
-
-  return JSON.stringify(
-    {
-      nombre: initiative.nombre,
-      canalDeOrigen: initiative.sourceType,
-      areaDelSolicitante: omitEmpty(initiative.areaSolicitante),
-      necesidad: initiative.necesidad,
-      solucionPropuesta: omitEmpty(initiative.solucionPropuesta),
-      impactaPrincipalmenteA: initiative.impactaA.length ? initiative.impactaA : undefined,
-      productosRelacionados: initiative.productoRelacionado.length
-        ? initiative.productoRelacionado
-        : undefined,
-      beneficiosEsperados: initiative.beneficios.length ? initiative.beneficios : undefined,
-      urgencia: omitEmpty(initiative.urgencia),
-      impacto: omitEmpty(initiative.impacto),
-      tieneInteresado: initiative.tieneInteresado ?? undefined,
-      expectativaSolucion: omitEmpty(initiative.expectativaSolucion),
-      areaProcesoImpactado: omitEmpty(initiative.areaProcesoImpactado),
-      areaInvolucrada: omitEmpty(initiative.areaInvolucrada),
-      porQueAhora: omitEmpty(initiative.porQueAhora),
-      paraQue: omitEmpty(initiative.paraQue),
-      comoSeResuelveHoy: omitEmpty(initiative.comoSeResuelveHoy),
-      referenciaInternacional: initiative.referenceOrganization
-        ? {
-            organizacion: initiative.referenceOrganization,
-            evento: initiative.referenceEvent,
-            link: initiative.referenceLink,
-            porQueEsRelevante: initiative.referenceRationale,
-          }
-        : undefined,
-      empresasQueReportanElDolor: initiative.companyContacts.map((contact) => ({
-        empresa: contact.empresa,
-        cargo: contact.cargo,
-      })),
-    },
-    null,
-    2,
-  );
-}
-
 /**
  * Rapid triage: one LLM call that classifies an initiative and picks its work table.
  * Deliberately independent from `runEvaluationPipeline`, which stays the deep,
@@ -205,7 +158,7 @@ export async function runTriage(initiativeId: string): Promise<TriageResult> {
   const prompt = template
     .replace('{{CLASSIFICATIONS}}', buildCatalog(classifications))
     .replace('{{WORK_TABLES}}', buildCatalog(workTables))
-    .replace('{{INITIATIVE}}', buildInitiativeBlock(initiative));
+    .replace('{{INITIATIVE}}', buildInitiativeContext(initiative, { contacts: 'summary' }));
 
   const picked = parseTriageJson(await generatePlainText(prompt));
 

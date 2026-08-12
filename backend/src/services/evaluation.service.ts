@@ -15,6 +15,7 @@ import { createMessage } from '../repositories/message.repository.js';
 import type { ToolContext } from '../types/tools.types.js';
 import { AppError } from '../utils/AppError.js';
 import { runInterviewAgent } from './agent.service.js';
+import { ensureCriteriaVersion } from './criteria-version.service.js';
 import { runEvaluationPipeline } from './evaluation-pipeline.service.js';
 
 export type EvaluationStartMode = 'interview' | 'direct';
@@ -55,6 +56,11 @@ async function createEvaluationShell(
     criteria.map((item) => [item.id, item.peso]),
   );
 
+  // También aquí, y no solo al cambiar los criterios: si la configuración lleva
+  // meses sin tocarse, nunca se habría registrado y la evaluación quedaría sin
+  // versión. Es idempotente, así que llamarla de más no crea nada.
+  const version = await ensureCriteriaVersion(criteria);
+
   return createEvaluationWithConversation({
     initiativeId,
     evaluatorId: actorId,
@@ -62,6 +68,7 @@ async function createEvaluationShell(
     criteriaSnapshot: criteria,
     weightsSnapshot,
     configVersion: buildConfigVersion(criteria),
+    criteriaVersionId: version.id,
   });
 }
 

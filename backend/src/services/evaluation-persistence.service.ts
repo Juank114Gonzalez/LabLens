@@ -1,9 +1,5 @@
-import {
-  ConversationStatus,
-  EvaluationStatus,
-  InitiativeStatus,
-  Prisma,
-} from '@prisma/client';
+import { ConversationStatus, EvaluationStatus, InitiativeStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { listClassifications } from '../repositories/classification.repository.js';
 import { listCriteria } from '../repositories/criteria.repository.js';
 import { updateConversation } from '../repositories/conversation.repository.js';
@@ -11,9 +7,13 @@ import {
   getEvaluationOrThrow,
   updateEvaluation,
 } from '../repositories/evaluation.repository.js';
-import { updateInitiative } from '../repositories/domain-initiative.repository.js';
+import {
+  findTriageOutcome,
+  updateInitiative,
+} from '../repositories/domain-initiative.repository.js';
 import { listWorkTables } from '../repositories/work-table.repository.js';
 import {
+  compareWithTriage,
   computeWeightedFit,
   type BusinessCase,
   type CriterionScore,
@@ -99,6 +99,11 @@ export async function persistEvaluationResult(input: PersistEvaluationInput) {
   const fit = computeWeightedFit(criteriaScores);
   const businessCase = input.businessCase;
 
+  const triageComparison = compareWithTriage(
+    await findTriageOutcome(input.initiativeId),
+    { classificationId: classification.id, workTableId: workTable.id },
+  );
+
   const results: EvaluationResultsPayload = {
     fit,
     criteriaScores,
@@ -106,6 +111,7 @@ export async function persistEvaluationResult(input: PersistEvaluationInput) {
     priorityJustification: input.priorityJustification,
     classificationJustification: input.classificationJustification,
     workTableJustification: input.workTableJustification,
+    triageComparison,
   };
 
   const weightsSnapshot = Object.fromEntries(

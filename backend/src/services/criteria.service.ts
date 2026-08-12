@@ -6,8 +6,11 @@ import {
   listCriteria,
   updateCriteria,
 } from '../repositories/criteria.repository.js';
-import { assertActiveCriteriaWeightsSum100 } from '../utils/criteria-weights.js';
-import { AppError } from '../utils/AppError.js';
+import {
+  assertActiveCriteriaWeightsSum100,
+  assertWeightsSumTo100,
+} from '../utils/criteria-weights.js';
+import { ensureCurrentCriteriaVersion } from './criteria-version.service.js';
 import type {
   CreateCriteriaDto,
   UpdateCriteriaDto,
@@ -21,13 +24,21 @@ export async function getEvaluationCriteria(id: string) {
   return getCriteriaOrThrow(id);
 }
 
+/*
+ * Cada mutación registra la configuración resultante en el historial. Es
+ * idempotente: si el cambio no alteró el contenido efectivo —reordenar sin tocar
+ * pesos ni textos, por ejemplo— se reutiliza la versión existente en vez de
+ * inventar una nueva.
+ */
 export async function createEvaluationCriteria(input: CreateCriteriaDto) {
   const activo = input.activo ?? true;
   await assertActiveCriteriaWeightsSum100(undefined, {
     peso: input.peso,
     activo,
   });
-  return createCriteria({ ...input, activo });
+  const creado = await createCriteria({ ...input, activo });
+  await ensureCurrentCriteriaVersion();
+  return creado;
 }
 
 export async function updateEvaluationCriteria(id: string, input: UpdateCriteriaDto) {
@@ -37,7 +48,9 @@ export async function updateEvaluationCriteria(id: string, input: UpdateCriteria
     activo: input.activo ?? current.activo,
   };
   await assertActiveCriteriaWeightsSum100(id, next);
-  return updateCriteria(id, input);
+  const actualizado = await updateCriteria(id, input);
+  await ensureCurrentCriteriaVersion();
+  return actualizado;
 }
 
 export async function deleteEvaluationCriteria(id: string) {
@@ -46,18 +59,14 @@ export async function deleteEvaluationCriteria(id: string) {
     await assertActiveCriteriaWeightsSum100(id, { peso: 0, activo: false });
   }
   await deleteCriteria(id);
+  await ensureCurrentCriteriaVersion();
 }
 
 export async function reorderEvaluationCriteria(
   items: Array<{ id: string; orden: number; peso: number; activo: boolean }>,
 ) {
   const sum = items.filter((item) => item.activo).reduce((total, item) => total + item.peso, 0);
-  if (sum !== 100) {
-    throw new AppError(
-      `La suma de pesos de criterios activos debe ser exactamente 100%. Actual: ${sum}%`,
-      400,
-    );
-  }
+  assertWeightsSumTo100(sum);
 
   await prisma.$transaction(
     items.map((item) =>
@@ -68,5 +77,6 @@ export async function reorderEvaluationCriteria(
     ),
   );
 
+  await ensureCurrentCriteriaVersion();
   return listCriteria();
 }

@@ -80,9 +80,21 @@ export const startEvaluationBodySchema = z
   })
   .default({});
 
+/**
+ * `pendientes` es la acción segura y por eso es el default; `todas` reclasifica
+ * el histórico y sobreescribe dictámenes ya comunicados, así que hay que pedirla
+ * explícitamente.
+ */
+export const triageSweepBodySchema = z
+  .object({
+    alcance: z.enum(['pendientes', 'todas']).default('pendientes'),
+  })
+  .default({ alcance: 'pendientes' });
+
 export type CreateInitiativeDto = z.infer<typeof createInitiativeSchema>;
 export type UpdateInitiativeDto = z.infer<typeof updateInitiativeSchema>;
 export type RegisterInitiativeDto = z.infer<typeof registerInitiativeSchema>;
 export type InitiativeIdParamsDto = z.infer<typeof initiativeIdParamsSchema>;
 export type StartEvaluationBodyDto = z.infer<typeof startEvaluationBodySchema>;
+export type TriageSweepBodyDto = z.infer<typeof triageSweepBodySchema>;
 export type CompanyContactDto = z.infer<typeof companyContactSchema>;

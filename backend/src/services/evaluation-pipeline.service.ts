@@ -6,6 +6,10 @@ import { listPreviousEvaluationsForInitiative } from '../repositories/evaluation
 import { listWorkTables } from '../repositories/work-table.repository.js';
 import type { BusinessCase, CriterionScore } from '../types/evaluation-domain.types.js';
 import { AppError } from '../utils/AppError.js';
+import {
+  buildInitiativeContext,
+  type InitiativeWithRelations,
+} from '../utils/initiative-context.js';
 import { persistEvaluationResult } from './evaluation-persistence.service.js';
 import { generatePlainText } from './llm.service.js';
 
@@ -45,36 +49,21 @@ function parseJson<T>(raw: string, schema: z.ZodType<T>): T {
 }
 
 function buildContextPack(input: {
-  initiative: NonNullable<Awaited<ReturnType<typeof findInitiativeById>>>;
+  initiative: InitiativeWithRelations;
   transcript: string;
   previousSummary: string;
 }) {
-  const initiative = input.initiative;
   return [
     '## Iniciativa',
-    JSON.stringify(
-      {
-        id: initiative.id,
-        status: initiative.status,
-        nombre: initiative.nombre,
-        expectativaSolucion: initiative.expectativaSolucion,
-        areaProcesoImpactado: initiative.areaProcesoImpactado,
-        areaInvolucrada: initiative.areaInvolucrada,
-        urgencia: initiative.urgencia,
-        impacto: initiative.impacto,
-        necesidad: initiative.necesidad,
-        porQueAhora: initiative.porQueAhora,
-        paraQue: initiative.paraQue,
-        comoSeResuelveHoy: initiative.comoSeResuelveHoy,
-        companyContacts: initiative.companyContacts,
-        attachments: initiative.attachments.map((item) => ({
-          originalName: item.originalName,
-          mimeType: item.mimeType,
-        })),
-      },
-      null,
-      2,
-    ),
+    // Serializador compartido con el triage. Cuando esto tenía su propia copia,
+    // se quedó anclado al modelo de datos anterior al formulario público: mandaba
+    // siete campos que el canal público deja vacíos y omitía los seis que sí
+    // llena, así que los criterios se puntuaban casi a ciegas.
+    buildInitiativeContext(input.initiative, {
+      includeIdentity: true,
+      contacts: 'full',
+      includeAttachments: true,
+    }),
     '',
     '## Entrevista (si existe)',
     input.transcript || '(Sin entrevista: evaluación directa sobre datos de la iniciativa)',

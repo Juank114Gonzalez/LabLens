@@ -23,6 +23,9 @@ const evaluationInclude = {
   evaluator: { select: { id: true, name: true, email: true } },
   classification: true,
   workTable: true,
+  // Solo el número y la fecha: el snapshot completo pesa y ya viaja en
+  // `criteriaSnapshot` de la propia evaluación.
+  criteriaVersion: { select: { numero: true, createdAt: true } },
 } satisfies Prisma.EvaluationInclude;
 
 export async function createEvaluationWithConversation(input: {
@@ -32,6 +35,7 @@ export async function createEvaluationWithConversation(input: {
   criteriaSnapshot: unknown;
   weightsSnapshot: unknown;
   configVersion: string;
+  criteriaVersionId?: string;
 }) {
   return prisma.$transaction(async (tx) => {
     const evaluation = await tx.evaluation.create({
@@ -43,6 +47,7 @@ export async function createEvaluationWithConversation(input: {
         criteriaSnapshot: input.criteriaSnapshot as Prisma.InputJsonValue,
         weightsSnapshot: input.weightsSnapshot as Prisma.InputJsonValue,
         configVersion: input.configVersion,
+        criteriaVersionId: input.criteriaVersionId,
         conversation: {
           create: {
             title: input.title,

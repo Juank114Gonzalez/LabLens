@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { config as loadDotenv } from 'dotenv';
+import { ensureCurrentCriteriaVersion } from '../src/services/criteria-version.service.js';
 
 // `prisma db seed` loads .env before running this file, but `tsx prisma/seed.ts`
 // does not. Loading it here keeps both entry points working; on Render the vars
@@ -82,15 +83,24 @@ const workTables = [
   },
 ] as const;
 
-// Criterios oficiales del enunciado del reto (sección 5.3).
-// Los pesos declarados son 20 / 20 / 20 / 15 / 12.5 / 12.5; como el modelo guarda enteros,
-// el 12.5 se reparte en 13 (Escalabilidad) y 12 (Factibilidad técnica) para sumar 100.
+// Criterios oficiales del enunciado del reto (sección 5.3), con los pesos tal
+// como se declaran allí: 20 / 20 / 20 / 15 / 12.5 / 12.5.
+//
+// El `promptContext` incorpora además las definiciones y preguntas orientadoras
+// de la sección 9.1 (criterios de valor de ACH). Esa sección no reemplaza el
+// modelo de scoring: lo detalla. Sus cinco criterios se reparten entre estos
+// seis —potencial de ingresos, protección del negocio y diversificación caen en
+// "Valor para el negocio"; experiencia del cliente en "Impacto al cliente";
+// tamaño de mercado en "Escalabilidad"— porque puntuar diez dimensiones
+// solapadas diluiría el score sin agregar criterio.
 const criteria = [
   {
     nombre: 'Alineación estratégica',
     descripcion: 'Grado de acople con los OKRs organizacionales y con el propósito del Laboratorio Digital.',
     promptContext:
-      'Evalúa qué tan alineada está la iniciativa con los OKRs organizacionales de ACH y con el propósito del Laboratorio Digital de innovación.',
+      'Evalúa qué tan alineada está la iniciativa con los OKRs organizacionales de ACH y con el propósito del Laboratorio Digital de innovación. ' +
+      'Considera los dos ejes estratégicos declarados: proteger la posición de ACH en su negocio core de movimiento de dinero frente a competidores y nuevos entrantes como Bre-B, y diversificar sus fuentes de ingreso más allá de ese core. ' +
+      'Pregunta orientadora: ¿esta iniciativa responde a alguno de esos dos ejes, o es ajena a la estrategia?',
     peso: 20,
     orden: 1,
   },
@@ -98,15 +108,22 @@ const criteria = [
     nombre: 'Nivel de innovación',
     descripcion: 'Novedad tecnológica y diferenciación competitiva frente al mercado y a lo ya existente en ACH.',
     promptContext:
-      'Evalúa la novedad tecnológica de la iniciativa y su diferenciación competitiva: qué tanto se aparta de lo que ACH y el mercado ya hacen.',
+      'Evalúa la novedad tecnológica de la iniciativa y su diferenciación competitiva: qué tanto se aparta de lo que ACH y el mercado ya hacen. ' +
+      'Considera si la ventaja que genera sería difícil de replicar por un competidor. ' +
+      'Pregunta orientadora: ¿esto existe ya en el mercado colombiano de pagos, y si alguien quisiera copiarlo, cuánto le costaría?',
     peso: 20,
     orden: 2,
   },
   {
     nombre: 'Valor para el negocio',
-    descripcion: 'Retorno esperado: aumento de ingresos, ahorro de costos o protección del negocio core.',
+    descripcion:
+      'Retorno esperado: ingresos nuevos o incrementales, protección del negocio core y diversificación de fuentes de ingreso.',
     promptContext:
-      'Evalúa el retorno esperado de la iniciativa en términos de ingresos nuevos, ahorro de costos o protección de la posición de ACH en su negocio core de movimiento de dinero.',
+      'Evalúa el retorno esperado de la iniciativa integrando los tres criterios de valor de ACH. ' +
+      'Potencial de ingresos: ¿cuánto dinero nuevo puede generar para ACH, y con qué certeza? Pesa tanto el tamaño de la oportunidad como la probabilidad de que se materialice dentro del horizonte del laboratorio. ' +
+      'Protección del negocio: ¿protege o amplía la posición de ACH en pagos y movimiento de dinero, aumentando market share, reduciendo fuga de clientes o cerrando brechas frente a competidores y nuevos entrantes como Bre-B? ' +
+      'Diversificación: ¿abre una fuente de ingreso genuinamente nueva, distinta al negocio core? Las de mayor puntaje son aquellas sin las cuales el objetivo de diversificación se vería comprometido. ' +
+      'Una iniciativa que solo ahorra costos internos, sin tocar ninguno de los tres, no puede puntuar alto aquí.',
     peso: 20,
     orden: 3,
   },
@@ -114,31 +131,38 @@ const criteria = [
     nombre: 'Impacto al cliente',
     descripcion: 'Mejora directa en la experiencia y satisfacción del usuario final.',
     promptContext:
-      'Evalúa si la iniciativa resuelve un dolor real, frecuente y significativo del cliente, y si crea una experiencia notablemente superior a las alternativas actuales.',
+      'Evalúa en qué medida la iniciativa resuelve un dolor real, frecuente y significativo del cliente, o crea una experiencia notablemente superior a la actual que constituya una ventaja competitiva difícil de replicar. ' +
+      'Pregunta orientadora: ¿esto resuelve un dolor real del cliente mejor que cualquier alternativa actual, y es difícil de copiar? ' +
+      'Un dolor declarado por varias empresas o clientes concretos pesa más que uno supuesto.',
     peso: 15,
     orden: 4,
   },
   {
     nombre: 'Escalabilidad',
-    descripcion: 'Potencial de crecimiento y replicabilidad en otras áreas, clientes o mercados.',
+    descripcion: 'Tamaño del mercado alcanzable y facilidad de replicar la iniciativa más allá del piloto.',
     promptContext:
-      'Evalúa a cuántos clientes o áreas puede llegar la iniciativa y qué tan fácil es replicarla o escalarla más allá del piloto inicial sin reinventarla.',
-    peso: 13,
+      'Analiza el universo de clientes o usuarios que pueden beneficiarse de la iniciativa y la facilidad con la que puede escalar más allá del piloto inicial, sin necesidad de reinventarla. ' +
+      'Pregunta orientadora: ¿a cuántos clientes puede llegar y qué tan fácil es replicarla o escalarla? ' +
+      'Una solución a la medida de un solo cliente puntúa bajo aunque ese cliente sea grande.',
+    peso: 12.5,
     orden: 5,
   },
   {
     nombre: 'Factibilidad técnica',
     descripcion: 'Disponibilidad de datos y APIs, y complejidad de integración con la arquitectura actual.',
     promptContext:
-      'Evalúa la disponibilidad de datos y APIs necesarios y la complejidad de integrar la iniciativa con la arquitectura y capacidades actuales de ACH.',
-    peso: 12,
+      'Evalúa la disponibilidad de datos y APIs necesarios y la complejidad de integrar la iniciativa con la arquitectura y capacidades actuales de ACH. ' +
+      'Considera que el riel transaccional de ACH es infraestructura crítica: una iniciativa que exija tocar el core de liquidación es menos factible que una que se apoye en capacidades ya expuestas.',
+    peso: 12.5,
     orden: 6,
   },
 ] as const;
 
 async function main() {
+  // Tolerancia por el mismo motivo que en criteria-weights.ts: los pesos son
+  // decimales y la igualdad exacta en coma flotante es una trampa.
   const weightSum = criteria.reduce((sum, item) => sum + item.peso, 0);
-  if (weightSum !== 100) {
+  if (Math.abs(weightSum - 100) > 1e-6) {
     throw new Error(`Seed criteria weights must sum to 100, got ${weightSum}`);
   }
 
@@ -216,7 +240,15 @@ async function main() {
     });
   }
 
+  // El seed escribe los criterios directo con Prisma, sin pasar por
+  // criteria.service, así que registra la versión a mano. Sin esto el historial
+  // tendría un hueco justo en la configuración de arranque.
+  const version = await ensureCurrentCriteriaVersion();
+
   console.log('Seed completed: admin, classifications, work tables, criteria');
+  if (version) {
+    console.log(`Criteria version: v${version.numero}`);
+  }
 }
 
 main()

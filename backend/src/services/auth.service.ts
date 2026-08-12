@@ -114,7 +114,13 @@ export async function getCurrentUser(userId: string): Promise<AuthSessionRespons
   };
 }
 
-async function fetchMicrosoftProfile(token: string): Promise<{ mail?: string; userPrincipalName?: string; displayName?: string }> {
+type MicrosoftProfile = {
+  mail?: string;
+  userPrincipalName?: string;
+  displayName?: string;
+};
+
+async function fetchMicrosoftProfile(token: string): Promise<MicrosoftProfile> {
   try {
     const response = await fetch('https://graph.microsoft.com/v1.0/me', {
       headers: {
@@ -126,9 +132,12 @@ async function fetchMicrosoftProfile(token: string): Promise<{ mail?: string; us
       throw new Error(`Microsoft Graph API returned status ${response.status}`);
     }
 
-    return await response.json() as any;
-  } catch (error: any) {
-    throw new AppError(`Failed to verify Microsoft token: ${error.message}`, 401);
+    return (await response.json()) as MicrosoftProfile;
+  } catch (error) {
+    // `error` es `unknown`: puede ser el Error de arriba, un fallo de red o algo
+    // que ni siquiera sea un Error, así que se estrecha antes de leer `.message`.
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AppError(`Failed to verify Microsoft token: ${message}`, 401);
   }
 }
 

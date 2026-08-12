@@ -7,6 +7,7 @@ import {
   reorderEvaluationCriteria,
   updateEvaluationCriteria,
 } from '../services/criteria.service.js';
+import { listCriteriaVersions } from '../services/criteria-version.service.js';
 import { sendSuccess } from '../utils/response.js';
 import type {
   CreateCriteriaDto,
@@ -17,6 +18,10 @@ import type {
 
 export async function listCriteriaController(_req: Request, res: Response) {
   sendSuccess(res, await listEvaluationCriteria());
+}
+
+export async function listCriteriaVersionsController(_req: Request, res: Response) {
+  sendSuccess(res, await listCriteriaVersions());
 }
 
 export async function getCriteriaController(req: Request, res: Response) {

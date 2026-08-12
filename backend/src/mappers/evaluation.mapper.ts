@@ -4,6 +4,7 @@ import type {
   CriterionScore,
   EvaluationReadiness,
   EvaluationResultsPayload,
+  TriageComparison,
 } from '../types/evaluation-domain.types.js';
 
 export type EvaluationResultView = {
@@ -15,6 +16,12 @@ export type EvaluationResultView = {
   priority: string | null;
   priorityJustification: string | null;
   criteriaScores: CriterionScore[];
+  /**
+   * Versión compartida de la configuración usada. Nula en las evaluaciones
+   * anteriores al historial que no tuvieran un `criteriaSnapshot` legible.
+   */
+  criteriaVersion: { numero: number; createdAt: Date } | null;
+  triageComparison: TriageComparison | null;
   classification: {
     id: string;
     nombre: string;
@@ -67,6 +74,7 @@ export function toEvaluationResultView(
   evaluation: Evaluation & {
     classification?: IntelligentClassification | null;
     workTable?: WorkTable | null;
+    criteriaVersion?: { numero: number; createdAt: Date } | null;
     conversation?: { id: string } | null;
     initiative?: {
       id: string;
@@ -115,6 +123,15 @@ export function toEvaluationResultView(
     priority: evaluation.priority ?? results?.priority ?? null,
     priorityJustification: results?.priorityJustification ?? null,
     criteriaScores: results?.criteriaScores ?? [],
+    criteriaVersion: evaluation.criteriaVersion
+      ? {
+          numero: evaluation.criteriaVersion.numero,
+          createdAt: evaluation.criteriaVersion.createdAt,
+        }
+      : null,
+    // Ausente en las evaluaciones cerradas antes de que esto existiera: su
+    // snapshot es inmutable y no se reescribe.
+    triageComparison: results?.triageComparison ?? null,
     classification: evaluation.classification
       ? {
           id: evaluation.classification.id,

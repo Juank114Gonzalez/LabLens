@@ -5,6 +5,7 @@ import {
   deleteCriteriaController,
   getCriteriaController,
   listCriteriaController,
+  listCriteriaVersionsController,
   reorderCriteriaController,
   updateCriteriaController,
 } from '../controllers/criteria.controller.js';
@@ -24,6 +25,9 @@ const criteriaRouter = Router();
 criteriaRouter.use(authenticate);
 
 criteriaRouter.get('/', asyncHandler(listCriteriaController));
+
+// Antes de '/:id' para que "versions" no se lea como un identificador.
+criteriaRouter.get('/versions', asyncHandler(listCriteriaVersionsController));
 
 criteriaRouter.put(
   '/reorder',

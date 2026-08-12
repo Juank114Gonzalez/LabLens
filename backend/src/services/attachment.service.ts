@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const archiver = require('archiver') as any;
 import {
   createAttachment,
+  countAttachmentsWithPublicId,
   deleteAttachment,
   getAttachmentOrThrow,
   listAttachmentsByInitiative,
@@ -69,7 +70,15 @@ export async function deleteAttachmentForActor(
   if (initiative.status !== InitiativeStatus.DRAFT) {
     throw new AppError('Solo se pueden eliminar evidencias en borrador', 409);
   }
-  await deleteCloudinaryAsset(attachment.publicId);
+  // El archivo en Cloudinary solo se destruye si esta era la última fila que lo
+  // usaba. Las copias de una iniciativa comparten `publicId` con el original en
+  // vez de duplicar la subida, así que destruirlo a ciegas al borrar una copia
+  // dejaría al original con un enlace roto a su propia evidencia.
+  const enUso = await countAttachmentsWithPublicId(attachment.publicId);
+  if (enUso <= 1) {
+    await deleteCloudinaryAsset(attachment.publicId);
+  }
+
   await deleteAttachment(id);
 }
 
@@ -99,7 +108,7 @@ export async function downloadAttachmentsZip(
 
   void archive.finalize();
 
-  const safeName = (initiative.nombre || 'iniciativa').replace(/[^\w\-]+/g, '_');
+  const safeName = (initiative.nombre || 'iniciativa').replace(/[^\w-]+/g, '_');
   return {
     stream,
     filename: `evidencias-${safeName}.zip`,
