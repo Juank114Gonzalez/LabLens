@@ -1,0 +1,17 @@
+name: Keep Render service alive
+
+on:
+  schedule:
+    # GitHub no garantiza el minuto exacto, pero dispara aprox. cada 8 minutos.
+    - cron: '*/8 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl -fsS --max-time 20 "https://lablens-qopg.onrender.com/api/health" \
+            && echo "OK: servicio respondio" \
+            || echo "WARN: el ping fallo (puede ser un cold start, no se marca el job como fallido)"
