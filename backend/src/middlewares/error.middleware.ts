@@ -23,17 +23,23 @@ export function errorHandler(
 ): void {
   if (err instanceof ZodError) {
     const message = err.issues.map((issue) => issue.message).join('; ');
+    console.warn(`[Validation] ${message || 'Validation error'}`);
     res.status(400).json(buildErrorBody(message || 'Validation error'));
     return;
   }
 
   if (err instanceof AppError) {
+    const log = err.statusCode >= 500 ? console.error : console.warn;
+    log(`[AppError ${err.statusCode}] ${err.message}`);
     res.status(err.statusCode).json(buildErrorBody(err.message));
     return;
   }
 
   if (env.NODE_ENV !== 'production') {
     console.error(err);
+  } else {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error(`[Unhandled] ${message}`);
   }
 
   const message =

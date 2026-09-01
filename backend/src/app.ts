@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { isOriginAllowed } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
+import { requestLogger } from './middlewares/request-logger.middleware.js';
 import { apiRouter } from './routes/index.js';
 import { AppError } from './utils/AppError.js';
 
@@ -32,6 +33,7 @@ export function createApp() {
   );
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
+  app.use(requestLogger);
 
   app.use('/api', apiRouter);
 
