@@ -37,4 +37,16 @@ apiRouter.get('/health', (_req, res) => {
   });
 });
 
+apiRouter.get('/keepalive', (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log('[KEEPALIVE] Request received');
+  console.log(`[KEEPALIVE] timestamp=${timestamp}`);
+  console.log(`[KEEPALIVE] method=${req.method} path=/api/keepalive`);
+  res.status(200).json({
+    ok: true,
+    service: 'lablens-backend',
+    timestamp,
+  });
+});
+
 export { apiRouter };

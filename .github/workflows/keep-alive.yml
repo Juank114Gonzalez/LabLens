@@ -10,14 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ping Render health endpoint
+      - name: Ping Render backend
         run: |
-          echo "Pinging Render..."
-          date -u
+          echo "================================"
+          echo "KEEPALIVE START"
+          echo "UTC: $(date -u)"
+          echo "================================"
 
-          curl -v \
+          curl \
             --fail \
-            --max-time 30 \
-            "https://lablens-qopg.onrender.com/api/health"
+            --show-error \
+            --verbose \
+            --max-time 60 \
+            "https://lablens-qopg.onrender.com/api/keepalive"
 
-          echo "OK: servicio respondió"
+          echo ""
+          echo "================================"
+          echo "KEEPALIVE SUCCESS"
+          echo "UTC: $(date -u)"
+          echo "================================"
